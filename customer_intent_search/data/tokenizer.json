@@ -1,0 +1,1 @@
+{"max_vocab_size": 8000, "max_seq_len": 32, "word2idx": {"[PAD]": 0, "[UNK]": 1, "[CLS]": 2, "my": 3, "what": 4, "is": 5, "balance": 6, "lost": 7, "card": 8, "transfer": 9, "money": 10}}
