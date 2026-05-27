@@ -19,8 +19,9 @@ Example: 3 queries in a batch → x.shape = [3, 32, 128] = [B, L, D]
 Components in this file
 -----------------------
     MiniIntentConfig       — hyperparameters shared with the tokenizer
-    MultiHeadSelfAttention — core attention block (tokens attend to each other)
-    (MiniIntentEmbedder)   — full model; added in a later step
+    MultiHeadSelfAttention — tokens attend to each other (cross-token mixing)
+    TransformerBlock       — attention + FFN + residuals + layer norm
+    (MiniIntentEmbedder)   — full model; stacks blocks and embedding lookup
 """
 import math
 from dataclasses import dataclass
@@ -182,3 +183,73 @@ class MultiHeadSelfAttention(nn.Module):
         # Step 7: merge heads [B, H, L, Dh] → [B, L, D], then W_O.
         out = out.transpose(1, 2).contiguous().view(B, L, D)
         return self.out_proj(out)
+
+
+class TransformerBlock(nn.Module):
+    """
+    One transformer layer: self-attention followed by a feed-forward network (FFN).
+
+    Attention mixes information **across tokens**. The FFN transforms each token
+    **independently** with nonlinear capacity. Residual connections and layer norm
+    keep training stable.
+
+    High-level structure (Pre-Norm):
+        x → norm → attention → dropout → x + residual
+          → norm → FFN         → dropout → x + residual
+
+    FFN per token:
+        128 → 512 (expand) → GELU → dropout → 128 (compress)
+
+    Residual formula (both sublayers):
+        output = x + sublayer(norm(x))
+    """
+
+    def __init__(self, embed_dim: int, n_heads: int, ffn_dim: int, dropout: float):
+        super().__init__()
+        # Cross-token mixing (see MultiHeadSelfAttention).
+        self.attn = MultiHeadSelfAttention(embed_dim, n_heads, dropout)
+        # Per-token MLP: expand → GELU → compress. No cross-token communication.
+        self.ff = nn.Sequential(
+            nn.Linear(embed_dim, ffn_dim),   # D → ffn_dim (e.g. 128 → 512)
+            nn.GELU(),                        # nonlinearity (smooth ReLU-like)
+            nn.Dropout(dropout),
+            nn.Linear(ffn_dim, embed_dim),   # ffn_dim → D (e.g. 512 → 128)
+        )
+        # Pre-norm: normalize before each sublayer to stabilize activations.
+        self.norm1 = nn.LayerNorm(embed_dim)
+        self.norm2 = nn.LayerNorm(embed_dim)
+        self.dropout = nn.Dropout(dropout)
+
+    def forward(
+        self,
+        x: torch.Tensor,
+        attention_mask: Optional[torch.Tensor] = None,
+    ) -> torch.Tensor:
+        """
+        Full data flow ([B, L, D] throughout):
+
+            x
+             ↓  norm1
+             ↓  attention (tokens talk to each other)
+             ↓  dropout
+             ↓  x = x + ...          ← residual: preserve input, add delta
+             ↓  norm2
+             ↓  ff (each token 128→512→128)
+             ↓  dropout
+             ↓  x = x + ...          ← residual again
+            out
+
+        Args:
+            x: token vectors [B, L, D]
+            attention_mask: padding mask [B, L], passed through to attention
+
+        Returns:
+            Updated token vectors [B, L, D] — same shape, richer after
+            both cross-token mixing and per-token transformation.
+        """
+        # Sublayer 1: self-attention with residual (skip connection).
+        # Model learns the *change* (delta) rather than a full rewrite of x.
+        x = x + self.dropout(self.attn(self.norm1(x), attention_mask))
+        # Sublayer 2: feed-forward with residual.
+        x = x + self.dropout(self.ff(self.norm2(x)))
+        return x

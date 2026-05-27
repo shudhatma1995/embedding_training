@@ -61,7 +61,8 @@ Work through the steps below in order. Each step introduces one component, with 
 | Step | Topic | Status |
 |------|-------|--------|
 | 1 | Tokenizer — text to token IDs | Done |
-| 2 | Model — `MultiHeadSelfAttention` | Done |
+| 2 | `MultiHeadSelfAttention` | Done |
+| 3 | `TransformerBlock` — attention + FFN | Done |
 
 ---
 
@@ -229,7 +230,7 @@ The saved JSON stores `max_vocab_size`, `max_seq_len`, and `word2idx`.
 **Goal:** Map token IDs to dense vectors and let each token gather context from the rest of the sentence—so `"balance"` can incorporate `"my"` and `"check"`.
 
 **Key files:**
-- `customer_intent_search/model.py` — `MiniIntentConfig`, `MultiHeadSelfAttention`
+- `customer_intent_search/model.py` — `MiniIntentConfig`, `MultiHeadSelfAttention`, `TransformerBlock`
 
 #### What to do
 
@@ -449,6 +450,133 @@ Output "card": [0.58, 0.55, 0.41, ...]  ← now understands it's a lost card
 Same shape `(1, 4, 128)` in, same shape `(1, 4, 128)` out — but every word is now **context-aware**.
 
 This is everything `MultiHeadSelfAttention` does.
+
+---
+
+### Step 3 — TransformerBlock
+
+**Goal:** Wrap self-attention with a feed-forward network, residual connections, and layer normalization so each token both **talks to other tokens** and **transforms itself**.
+
+**Key file:** `customer_intent_search/model.py` — `TransformerBlock`
+
+#### What a TransformerBlock is
+
+Attention is powerful but it only does one thing — **mix information across tokens**. It has no ability to transform individual token representations nonlinearly.
+
+The `TransformerBlock` wraps attention with a **Feed-Forward Network (FFN)** that processes each token independently and adds expressive power.
+
+```
+Input x
+  → Attention  (tokens talk to each other)
+  → FFN        (each token thinks for itself)
+Output x
+```
+
+#### What to do
+
+1. **Read `TransformerBlock` in `model.py`** — note how it composes `MultiHeadSelfAttention`, `ff`, `norm1`, `norm2`, and `dropout`.
+2. **Trace the two sublayers** — attention residual first, then FFN residual:
+   ```python
+   from customer_intent_search.model import TransformerBlock
+
+   block = TransformerBlock(embed_dim=128, n_heads=4, ffn_dim=512, dropout=0.1)
+   # block(x, attention_mask) → same shape [B, L, 128]
+   ```
+3. **Compare with Step 2** — attention alone mixes tokens; the block adds per-token nonlinear transforms and stable training via residuals + norm.
+
+#### The feed-forward network
+
+```python
+self.ff = nn.Sequential(
+    nn.Linear(embed_dim, ffn_dim),   # 128 → 512  expand
+    nn.GELU(),                        # nonlinearity
+    nn.Dropout(dropout),
+    nn.Linear(ffn_dim, embed_dim),   # 512 → 128  compress
+)
+```
+
+Each token passes through this independently — no cross-token communication here.
+
+**Why expand to 512 then compress back to 128?**
+
+The expansion creates space to learn complex transformations. Think of it as:
+- Expand 128 → 512: unpack all possible interpretations
+- GELU: keep only useful ones
+- Compress 512 → 128: summarize back into a clean representation
+
+**GELU** is an activation function — it introduces nonlinearity so the network can learn complex patterns, not just linear transformations. Similar to ReLU but smoother:
+
+```
+negative values → squashed toward 0
+positive values → passed through mostly unchanged
+```
+
+Without nonlinearity, stacking linear layers would still just be one big linear layer.
+
+#### Residual connections
+
+This is the most important design pattern in the whole block:
+
+```python
+x = x + self.dropout(self.attn(self.norm1(x), attention_mask))
+x = x + self.dropout(self.ff(self.norm2(x)))
+```
+
+Notice the `x + ...` — we **add the output back to the original input**. This is a **residual connection** (also called skip connection).
+
+Without it:
+
+```
+x → attention → new_x   (original x is lost)
+```
+
+With it:
+
+```
+x → attention → delta_x
+output = x + delta_x     (original x is preserved, delta is added on top)
+```
+
+**Why does this matter?**
+
+The attention layer only needs to learn the **change** needed, not reconstruct the full representation from scratch. This makes training much more stable and allows gradients to flow directly back to early layers without vanishing.
+
+#### LayerNorm
+
+```python
+self.norm1 = nn.LayerNorm(embed_dim)
+self.norm2 = nn.LayerNorm(embed_dim)
+```
+
+Applied **before** attention and FFN (called Pre-Norm). Normalizes each token's vector to have mean ≈ 0 and std ≈ 1.
+
+**Why?** Keeps values in a stable range as they flow through layers. Without it, values can explode or shrink to zero across multiple layers, making training unstable.
+
+#### Full data flow
+
+```
+Input x: (B, 4, 128)
+         ↓
+      norm1(x)           normalize
+         ↓
+      attention(...)     tokens talk to each other → (B, 4, 128)
+         ↓
+      dropout(...)       randomly zero some values
+         ↓
+      x = x + ...        residual: add back original x
+         ↓
+      norm2(x)           normalize again
+         ↓
+      ff(...)            each token transforms itself 128→512→128
+         ↓
+      dropout(...)
+         ↓
+      x = x + ...        residual again
+         ↓
+Output x: (B, 4, 128)   same shape, richer representations
+```
+
+`MiniIntentConfig.n_layers = 2` means two of these blocks will be stacked in the full model.
 
 ## Dependencies
 
