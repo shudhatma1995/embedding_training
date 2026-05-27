@@ -26,7 +26,7 @@ Components in this file
 """
 import math
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import List, Optional, Union
 
 import torch
 import torch.nn as nn
@@ -411,8 +411,49 @@ class MiniIntentEmbedder(nn.Module):
         return torch.cat(all_embs, dim=0).numpy()
 
 
-def build_model(config: Optional[MiniIntentConfig] = None) -> MiniIntentEmbedder:
-    """Build MiniIntentEmbedder with default or custom config."""
-    if config is None:
+def build_model(
+    config_or_tokenizer: Optional[Union[MiniIntentConfig, object]] = None,
+) -> MiniIntentEmbedder:
+    """
+    Build MiniIntentEmbedder from a config, a fitted tokenizer, or defaults.
+
+    Examples:
+        build_model()                    # default MiniIntentConfig
+        build_model(MiniIntentConfig())  # explicit config
+        build_model(tok)                 # vocab_size/max_seq_len from tokenizer
+    """
+    if config_or_tokenizer is None:
         config = MiniIntentConfig()
+    elif isinstance(config_or_tokenizer, MiniIntentConfig):
+        config = config_or_tokenizer
+    else:
+        tok = config_or_tokenizer
+        config = MiniIntentConfig(
+            vocab_size=tok.vocab_size,
+            max_seq_len=tok.max_seq_len,
+        )
     return MiniIntentEmbedder(config)
+
+
+def smoke_test_embedder() -> None:
+    """Smoke test: fit tokenizer, build model, run one forward pass."""
+    try:
+        from .tokenizer import SimpleTokenizer
+    except ImportError:
+        from tokenizer import SimpleTokenizer
+
+    texts = ["what is my balance", "I lost my card", "transfer money"]
+    tok = SimpleTokenizer()
+    tok.fit(texts)
+
+    model = build_model(tok)
+    print(model.n_parameters())  # ~100k-600k depending on vocab size
+
+    ids, mask = tok.encode_batch(["I lost my card"])
+    output = model(ids, mask)
+    print(output.shape)  # torch.Size([1, 128])
+    print(output.norm(dim=-1))  # tensor([1.0000]) ← L2 normalized
+
+
+if __name__ == "__main__":
+    smoke_test_embedder()
