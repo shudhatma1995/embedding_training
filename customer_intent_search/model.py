@@ -21,11 +21,12 @@ Components in this file
     MiniIntentConfig       — hyperparameters shared with the tokenizer
     MultiHeadSelfAttention — tokens attend to each other (cross-token mixing)
     TransformerBlock       — attention + FFN + residuals + layer norm
-    (MiniIntentEmbedder)   — full model; stacks blocks and embedding lookup
+    MiniIntentEmbedder     — full model: embeddings → blocks → [CLS] → L2 norm
+    build_model            — factory helper to construct the embedder
 """
 import math
 from dataclasses import dataclass
-from typing import Optional
+from typing import List, Optional
 
 import torch
 import torch.nn as nn
@@ -253,3 +254,165 @@ class TransformerBlock(nn.Module):
         # Sublayer 2: feed-forward with residual.
         x = x + self.dropout(self.ff(self.norm2(x)))
         return x
+
+
+class MiniIntentEmbedder(nn.Module):
+    """
+    Full intent embedding model: token IDs → unit-length sentence vectors.
+
+    Pipeline
+    --------
+        input_ids [B, L]
+            → word_emb + pos_emb     integer IDs → vectors (+ position)
+            → n_layers × TransformerBlock
+            → x[:, 0, :]             pool [CLS] token at position 0
+            → L2 normalize             cosine similarity = dot product
+
+    word_emb vs Q/K/V
+    -----------------
+    word_emb is the **entry point** — a lookup table that maps token IDs to
+    vectors. It runs *before* attention. Q/K/V projections inside attention
+    operate on word_emb output, not on raw IDs.
+
+        token ID → word_emb → [128-dim vector] → q_proj/k_proj/v_proj → Q/K/V
+
+    Both word_emb and pos_emb are **learned** during training (start random,
+    updated by backprop like any other weight).
+
+    Shape trace ("I lost my card", B=1, L=4)
+    -----------------------------------------
+        input_ids:           (1, 4)
+        word_emb + pos_emb:  (1, 4, 128)
+        TransformerBlock ×2: (1, 4, 128) → (1, 4, 128)
+        x[:, 0, :]:          (1, 128)     [CLS] only
+        L2 normalize:        (1, 128)     length = 1.0
+    """
+
+    def __init__(self, config: MiniIntentConfig):
+        super().__init__()
+        self.config = config
+
+        # Lookup table (vocab_size, D): token ID → D-dim vector. Not Q/K/V —
+        # just converts integers into the vector space attention operates on.
+        # padding_idx=0 keeps PAD row permanently zero.
+        self.word_emb = nn.Embedding(
+            config.vocab_size, config.embed_dim,
+            padding_idx=config.pad_token_id,
+        )
+        # Lookup table (max_seq_len, D): position index → D-dim vector.
+        # Attention has no built-in order; pos_emb encodes "I am token k".
+        self.pos_emb = nn.Embedding(config.max_seq_len, config.embed_dim)
+        self.emb_norm = nn.LayerNorm(config.embed_dim)
+        self.emb_dropout = nn.Dropout(config.dropout)
+
+        # Stack n_layers TransformerBlocks (default 2).
+        self.layers = nn.ModuleList([
+            TransformerBlock(config.embed_dim, config.n_heads,
+                             config.ffn_dim, config.dropout)
+            for _ in range(config.n_layers)
+        ])
+
+        self.output_norm = nn.LayerNorm(config.embed_dim)
+        self._init_weights()
+
+    def _init_weights(self):
+        """
+        Sensible random init before training. Bad init → slow or unstable training.
+
+        Linear:     Xavier uniform — scale by layer size, avoid exploding/vanishing
+        Embedding:  Normal(std=0.02) — GPT/BERT-style small random values
+        LayerNorm:  weight=1, bias=0
+        PAD row:    forced to zero after init
+        """
+        for module in self.modules():
+            if isinstance(module, nn.Linear):
+                nn.init.xavier_uniform_(module.weight)
+                if module.bias is not None:
+                    nn.init.zeros_(module.bias)
+            elif isinstance(module, nn.Embedding):
+                nn.init.normal_(module.weight, std=0.02)
+                if module.padding_idx is not None:
+                    module.weight.data[module.padding_idx].zero_()
+            elif isinstance(module, nn.LayerNorm):
+                nn.init.ones_(module.weight)
+                nn.init.zeros_(module.bias)
+
+    def forward(
+        self,
+        input_ids: torch.Tensor,
+        attention_mask: Optional[torch.Tensor] = None,
+    ) -> torch.Tensor:
+        """
+        Full forward pass.
+
+        Flow:
+            1. positions = [0, 1, ..., L-1]
+            2. x = word_emb(ids) + pos_emb(positions)   per-token vectors
+            3. emb_norm → emb_dropout
+            4. for layer in layers: x = layer(x, mask)
+            5. cls_emb = output_norm(x[:, 0, :])         [CLS] at index 0
+            6. return L2-normalized cls_emb             unit vectors for retrieval
+
+        Args:
+            input_ids: token IDs from tokenizer [B, L]
+            attention_mask: 1=real token, 0=pad [B, L]
+
+        Returns:
+            Sentence embeddings [B, D], L2-normalized (each row has norm 1.0)
+        """
+        B, L = input_ids.shape
+        device = input_ids.device
+
+        # Position indices [0, 1, 2, ..., L-1] broadcast across batch.
+        positions = torch.arange(L, device=device).unsqueeze(0)
+        # Combine word meaning + position: e.g. "lost" at pos 1 knows both.
+        x = self.word_emb(input_ids) + self.pos_emb(positions)
+        x = self.emb_dropout(self.emb_norm(x))
+
+        for layer in self.layers:
+            x = layer(x, attention_mask)
+
+        # Pool sentence representation from [CLS] token (always at position 0).
+        cls_emb = self.output_norm(x[:, 0, :])
+        # L2 norm → cosine similarity equals dot product at retrieval time.
+        return F.normalize(cls_emb, p=2, dim=-1)
+
+    def n_parameters(self) -> int:
+        """Total trainable parameter count."""
+        return sum(p.numel() for p in self.parameters())
+
+    def encode(
+        self,
+        texts: List[str],
+        tokenizer,
+        batch_size: int = 128,
+        device: str = "cpu",
+    ):
+        """
+        Convenience method for inference on raw text strings.
+
+        Batches texts, tokenizes via SimpleTokenizer.encode_batch, runs forward
+        under torch.no_grad() (no gradient tracking — saves memory at inference).
+
+        Returns:
+            numpy array [num_texts, embed_dim] for scikit-learn / retrieval tools
+        """
+        self.eval()
+        all_embs = []
+
+        with torch.no_grad():
+            for i in range(0, len(texts), batch_size):
+                batch = texts[i: i + batch_size]
+                ids, mask = tokenizer.encode_batch(batch)
+                ids, mask = ids.to(device), mask.to(device)
+                embs = self(ids, mask)
+                all_embs.append(embs.cpu())
+
+        return torch.cat(all_embs, dim=0).numpy()
+
+
+def build_model(config: Optional[MiniIntentConfig] = None) -> MiniIntentEmbedder:
+    """Build MiniIntentEmbedder with default or custom config."""
+    if config is None:
+        config = MiniIntentConfig()
+    return MiniIntentEmbedder(config)

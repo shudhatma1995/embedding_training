@@ -30,9 +30,9 @@ Raw text          Token IDs           Token vectors         Context-aware       
 | Stage | Input | Output | Implemented in |
 |-------|-------|--------|----------------|
 | Tokenize | string | `[L]` integer IDs + mask | `tokenizer.py` |
-| Embed | token IDs | `[B, L, D]` float tensor | `model.py` |
-| Attend | embeddings + mask | `[B, L, D]` updated vectors | `MultiHeadSelfAttention` |
-| Pool | token vectors | `[B, D]` sentence embedding | `model.py` |
+| Embed | token IDs | `[B, L, D]` float tensor | `MiniIntentEmbedder.word_emb` |
+| Attend | embeddings + mask | `[B, L, D]` updated vectors | `TransformerBlock` |
+| Pool | token vectors | `[B, D]` sentence embedding | `MiniIntentEmbedder` ([CLS] + L2 norm) |
 
 **Tensor shorthand used throughout:**
 
@@ -63,6 +63,7 @@ Work through the steps below in order. Each step introduces one component, with 
 | 1 | Tokenizer — text to token IDs | Done |
 | 2 | `MultiHeadSelfAttention` | Done |
 | 3 | `TransformerBlock` — attention + FFN | Done |
+| 4 | `MiniIntentEmbedder` — full model | Done |
 
 ---
 
@@ -576,7 +577,168 @@ Input x: (B, 4, 128)
 Output x: (B, 4, 128)   same shape, richer representations
 ```
 
-`MiniIntentConfig.n_layers = 2` means two of these blocks will be stacked in the full model.
+`MiniIntentConfig.n_layers = 2` means two of these blocks stacked in sequence inside `MiniIntentEmbedder`.
+
+---
+
+### Step 4 — MiniIntentEmbedder
+
+**Goal:** Stack embeddings, transformer blocks, and [CLS] pooling into one model that maps a query to a **128-dim unit vector** ready for cosine-similarity search.
+
+**Key file:** `customer_intent_search/model.py` — `MiniIntentEmbedder`, `build_model()`
+
+#### What to do
+
+1. **Read `MiniIntentEmbedder`** after completing Steps 2–3.
+2. **Instantiate the full model:**
+   ```python
+   from customer_intent_search import SimpleTokenizer, MiniIntentConfig, build_model
+
+   tok = SimpleTokenizer()
+   tok.fit(["I lost my card", "what is my balance"])
+
+   model = build_model(MiniIntentConfig(vocab_size=tok.vocab_size))
+   texts = ["I lost my card", "check my balance"]
+   embs = model.encode(texts, tok)   # numpy array [2, 128]
+   print(embs.shape)
+   ```
+3. **Trace the shape flow** for a single sentence (see below).
+
+#### Full sequence: where word_emb fits
+
+`word_emb` is **not** Q, K, or V. It runs **before** attention — it converts integer token IDs into vectors the rest of the model can use.
+
+```
+raw token IDs
+      ↓
+  word_emb        ← lookup table: ID → [128-dim vector]
+      ↓
+  + pos_emb       ← adds position information
+      ↓
+  TransformerBlock
+      ├── norm1
+      ├── MultiHeadSelfAttention
+      │       ├── q_proj   ← operates on word_emb output
+      │       ├── k_proj
+      │       └── v_proj
+      └── FFN
+```
+
+Think of `word_emb` as converting a name into a phone number — just a lookup, no computation. Q/K/V come **after**, projecting those vectors into query/key/value roles.
+
+#### Embedding layers
+
+```python
+self.word_emb = nn.Embedding(config.vocab_size, config.embed_dim, padding_idx=config.pad_token_id)
+self.pos_emb  = nn.Embedding(config.max_seq_len, config.embed_dim)
+```
+
+**Word embedding** — lookup table shape `(vocab_size, 128)`. Each token ID maps to a row:
+
+```
+token ID 45 → row 45 → [0.2, 0.5, -0.3, ...]   128 numbers
+token ID  0 → row  0 → [0.0, 0.0,  0.0, ...]   ← PAD, always zero
+```
+
+**Positional embedding** — lookup table shape `(32, 128)`. Position 0 maps to one vector, position 1 to another. Attention has no built-in sense of order — `pos_emb` tells the model where each token sits.
+
+```
+position 0 → [0.1, 0.8, ...]   ← "I am first" ([CLS])
+position 1 → [0.4, 0.2, ...]   ← "I am second"
+```
+
+**`padding_idx=0`** — keeps the PAD token's embedding permanently at zero. PAD tokens carry no meaning and should contribute nothing.
+
+#### Do word_emb and pos_emb change during training?
+
+**Yes** — both are learned parameters, updated by backprop like any other weight.
+
+| Phase | `word_emb["lost"]` | `word_emb["card"]` |
+|-------|--------------------|--------------------|
+| Start (random) | `[0.02, -0.01, ...]` meaningless | `[0.01, 0.02, ...]` meaningless |
+| After training | shifted toward semantic meaning | shifted toward semantic meaning |
+
+After training, `"lost"` and `"card"` vectors point in similar directions if they frequently appeared together (e.g. in `"I lost my card"`).
+
+| Component | What it learns |
+|-----------|----------------|
+| `word_emb` | what each word means |
+| `pos_emb` | what each position means |
+| `q_proj`, `k_proj`, `v_proj` | how to compare meanings |
+| FFN | how to transform meanings |
+
+All start random and learn together through the same training loop.
+
+#### `_init_weights()`
+
+Before training, weights need sensible starting values:
+
+```python
+nn.init.xavier_uniform_(module.weight)   # Linear layers
+nn.init.normal_(module.weight, std=0.02) # Embeddings
+nn.init.ones_(module.weight)             # LayerNorm weight
+nn.init.zeros_(module.bias)              # All biases start at 0
+```
+
+- **Xavier uniform** — scales initial weights by layer size; keeps signals from exploding or vanishing at the start.
+- **Normal (std=0.02)** — small random embedding values; used by GPT and BERT.
+
+#### `forward()` — full data flow
+
+```python
+positions = torch.arange(L, device=device).unsqueeze(0)
+x = self.word_emb(input_ids) + self.pos_emb(positions)
+```
+
+Creates position indices `[0, 1, 2, ..., L-1]` and adds positional vectors to word vectors:
+
+```
+"lost" at position 1:
+  word_emb[token_id] + pos_emb[1]
+= [0.8, -0.1, 0.6, ...] + [0.4, 0.2, ...]
+= [1.2,  0.1, 0.8, ...]   ← knows it's "lost" AND at position 1
+```
+
+```python
+for layer in self.layers:
+    x = layer(x, attention_mask)
+```
+
+Pass through 2 `TransformerBlock`s sequentially. Each block refines representations further.
+
+```python
+cls_emb = self.output_norm(x[:, 0, :])
+return F.normalize(cls_emb, p=2, dim=-1)
+```
+
+- `x[:, 0, :]` — take only position 0, the `[CLS]` token, from every sentence. Shape `(B, 32, 128)` → `(B, 128)`.
+- `F.normalize(..., p=2)` — L2 normalize so every output vector has length exactly 1. Cosine similarity between two vectors then equals their dot product — cheaper at retrieval time.
+
+#### `encode()` — convenience method for inference
+
+Handles batching when encoding many texts:
+
+```python
+for i in range(0, len(texts), batch_size):
+    batch = texts[i: i + batch_size]
+    ...
+```
+
+- `torch.no_grad()` — no gradient tracking during inference (saves memory and compute).
+- Returns a **numpy array** `[num_texts, 128]` for scikit-learn and retrieval tools.
+
+#### Full shape trace for `"I lost my card"`
+
+```
+input_ids:          (1, 4)         ← 1 sentence, 4 tokens ([CLS] + 3 words)
+word_emb + pos_emb: (1, 4, 128)    ← each token → 128-dim vector
+→ x:                (1, 4, 128)
+TransformerBlock 1: (1, 4, 128) → (1, 4, 128)
+TransformerBlock 2: (1, 4, 128) → (1, 4, 128)
+x[:, 0, :]:         (1, 128)       ← take only [CLS] token
+normalize:          (1, 128)       ← length = 1.0
+Final output:       (1, 128)       ← sentence embedding
+```
 
 ## Dependencies
 
