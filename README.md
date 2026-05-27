@@ -2,6 +2,8 @@
 
 Training and evaluation code for embedding models, starting with customer intent search.
 
+This repo is built **step by step**. You can clone it, follow each step in order, run the code locally, and build the same customer-intent embedding pipeline from scratch. More steps will be added over time; start with Step 1 below.
+
 ## Project layout
 
 ```
@@ -23,7 +25,75 @@ source .venv/bin/activate
 python -m pip install -r requirements.txt
 ```
 
-## Tokenizer concepts
+## Follow along
+
+Work through the steps below in order. Each step introduces one component, with files you can read, commands to run, and concepts to understand before moving on.
+
+| Step | Topic | Status |
+|------|-------|--------|
+| 1 | Tokenizer — text to token IDs | Done |
+| 2 | — | Coming soon |
+
+---
+
+### Step 1 — Tokenizer
+
+**Goal:** Turn raw customer queries (for example, `"what is my balance"`) into fixed-length lists of integers that a neural network can consume.
+
+**Key files:**
+- `customer_intent_search/tokenizer.py` — `SimpleTokenizer` implementation
+- `customer_intent_search/data/tokenizer.json` — saved vocabulary after fitting
+
+#### What to do
+
+1. **Clone the repo and install dependencies** (see [Setup](#setup) above).
+2. **Open `customer_intent_search/tokenizer.py`** and skim the `SimpleTokenizer` class: `fit`, `encode`, `encode_batch`, `save`, and `load`.
+3. **Run the built-in tests** from the project root:
+   ```bash
+   python customer_intent_search/tokenizer.py
+   ```
+   You should see output for `fit`, `encode`, `encode_batch`, and save/load without errors.
+4. **Fit the tokenizer on your own sample texts** (short banking-style queries work well):
+   ```python
+   from pathlib import Path
+   from customer_intent_search import SimpleTokenizer
+
+   texts = [
+       "what is my balance",
+       "lost my card",
+       "transfer money to john",
+       "how do i reset my password",
+   ]
+
+   tok = SimpleTokenizer()
+   tok.fit(texts)
+   print(tok.vocab_size)
+   print(tok.word2idx)
+   ```
+5. **Encode a few sentences** and inspect the token IDs:
+   ```python
+   print(tok.encode("my balance"))
+   print(tok.encode("unknown xyzword"))  # out-of-vocabulary → UNK
+   ```
+6. **Save and reload** so the same vocabulary is reused later (training, inference):
+   ```python
+   data_dir = Path("customer_intent_search/data")
+   data_dir.mkdir(exist_ok=True)
+   tok.save(data_dir / "tokenizer.json")
+
+   tok2 = SimpleTokenizer.load(data_dir / "tokenizer.json")
+   print(tok2.encode("transfer money"))
+   ```
+7. **Try batch encoding** — this is what the model will use during training:
+   ```python
+   input_ids, attention_mask = tok.encode_batch(texts)
+   print(input_ids.shape)       # [batch_size, 32]
+   print(attention_mask.shape)  # [batch_size, 32]
+   ```
+
+When Step 1 is working, you should have a saved `tokenizer.json` under `customer_intent_search/data/` and understand how text becomes padded integer tensors.
+
+#### Tokenizer concepts
 
 A **tokenizer** converts raw text into numbers that a neural network can process. Models do not read strings directly—they operate on integer **token IDs** and fixed-size tensors.
 
@@ -123,13 +193,11 @@ tok = SimpleTokenizer.load(data_dir / "tokenizer.json")
 
 The saved JSON stores `max_vocab_size`, `max_seq_len`, and `word2idx`.
 
-### Run tests
+---
 
-```bash
-python customer_intent_search/tokenizer.py
-```
+### Step 2 — (coming soon)
 
-This runs built-in checks for `fit`, `encode`, `encode_batch`, and save/load.
+The next step will add the embedding model on top of these token IDs. Check back as new commits land on `main`.
 
 ## Dependencies
 
