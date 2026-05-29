@@ -8,12 +8,14 @@ This repo is built **step by step**. You can clone it, follow each step in order
 
 ```
 embedding_training/
-├── customer_intent_search/   # Intent search package
-│   ├── data/                 # Saved tokenizer and datasets
-│   ├── tokenizer.py          # SimpleTokenizer implementation
-│   └── model.py              # Embedding model (config + attention)
-├── models/                   # Trained model checkpoints
-├── results/                  # Evaluation plots and metrics
+├── customer_intent_search/       # Intent search package
+│   ├── data/                     # Saved tokenizer and datasets
+│   ├── tokenizer.py              # SimpleTokenizer implementation
+│   ├── model.py                  # Embedding model (config + attention)
+│   ├── synthetic_data.py         # Synthetic e-commerce intent dataset
+│   └── data_preparation.py      # Dataset loading, training pairs, batch sampler
+├── models/                       # Trained model checkpoints
+├── results/                      # Evaluation plots and metrics
 └── requirements.txt
 ```
 
@@ -64,6 +66,7 @@ Work through the steps below in order. Each step introduces one component, with 
 | 2 | `MultiHeadSelfAttention` | Done |
 | 3 | `TransformerBlock` — attention + FFN | Done |
 | 4 | `MiniIntentEmbedder` — full model | Done |
+| 5 | Data preparation — dataset loading, training pairs, batch sampler | Done |
 
 ---
 
@@ -739,6 +742,162 @@ x[:, 0, :]:         (1, 128)       ← take only [CLS] token
 normalize:          (1, 128)       ← length = 1.0
 Final output:       (1, 128)       ← sentence embedding
 ```
+
+---
+
+### Step 5 — Data Preparation
+
+**Goal:** Load the e-commerce intent dataset, create positive training pairs, and use a custom batch sampler that guarantees **zero false negatives** during contrastive training.
+
+**Key files:**
+- `customer_intent_search/synthetic_data.py` — generates synthetic e-commerce queries across 20 intents
+- `customer_intent_search/data_preparation.py` — `load_dataset()`, `create_training_pairs()`, `IntentAwareBatchSampler`, `build_retrieval_corpus()`
+
+#### Dataset
+
+The project uses a synthetic e-commerce customer support dataset with **20 intents across 5 domains**:
+
+| Domain | Intents |
+|--------|---------|
+| orders | track_order, cancel_order, modify_order, order_not_received, wrong_item_received |
+| returns | initiate_return, refund_status, exchange_item, damaged_item |
+| delivery | delivery_address_change, delivery_delay, express_shipping |
+| payments | payment_failed, apply_promo_code, price_match, invoice_request |
+| account | reset_password, loyalty_points, gift_card_balance, contact_support |
+
+Each intent has **150 training / 30 validation / 30 test** queries generated from templates with slot filling:
+
+```
+template:  "I want to return my {item} because {reason}"
+filled:    "I want to return my shoes because it doesn't fit"
+           "I want to return my jacket because I changed my mind"
+```
+
+Surface variations (capitalization, punctuation, adding "please") are applied so the model learns meaning is independent of surface form.
+
+#### Training pairs
+
+`create_training_pairs()` builds **(anchor, positive) pairs** — two queries from the **same intent**:
+
+```python
+pairs[0].texts = ["where is my #ORD-1234?",     "can you track my order?"]   # track_order
+pairs[1].texts = ["please cancel #ORD-5678",     "I changed my mind cancel"]  # cancel_order
+pairs[2].texts = ["where is my refund",          "refund not received yet"]   # refund_status
+```
+
+These pairs are the input to contrastive learning — the model is trained to make same-intent pairs similar and different-intent pairs dissimilar.
+
+#### Why false negatives are a problem
+
+In contrastive learning, a batch of pairs is passed to the loss function at once. For each anchor, **all other positives in the batch become implicit negatives**:
+
+```
+Anchor: "where is my order"      ← intent 0 (track_order)
+  ✓ positive: "track my package" ← intent 0 — should be SIMILAR
+  ✗ negative: "cancel my order"  ← intent 1 — should be DISSIMILAR
+  ✗ negative: "where is my refund" ← intent 2 — should be DISSIMILAR
+```
+
+This works perfectly when all off-diagonal pairs are **different intents**. But if two pairs in the same batch share the same intent, the off-diagonal entry becomes a **false negative** — a semantically similar pair being pushed apart:
+
+```
+batch = [pair_A (track_order), pair_B (track_order), pair_C (cancel_order)]
+
+Anchor: "where is my order"       ← track_order
+  ✓ positive: "track my package"  ← track_order — correctly pulled close
+  ✗ false negative: "has my order shipped?" ← also track_order — wrongly pushed apart!
+  ✗ true negative:  "cancel my order"       ← cancel_order — correctly pushed apart
+```
+
+The model gets **conflicting signals**: it is simultaneously told to treat `"has my order shipped?"` as similar (when it is the anchor in its own pair) and as dissimilar (when it is a negative for another pair). This slows convergence and hurts final quality.
+
+#### Why not just use a large batch size?
+
+With a large batch and random shuffling, the chance of same-intent collisions grows:
+
+```
+20 intents, batch size 64 → ~3 pairs per intent per batch
+63 negatives per anchor → ~2 are false negatives
+97% clean signal — acceptable but not ideal
+```
+
+Random shuffling reduces the problem statistically but does **not eliminate it**. The more intents share vocabulary (e.g. `track_order` vs `delivery_delay` both mention orders), the more harmful false negatives become.
+
+#### `IntentAwareBatchSampler` — the fix
+
+Instead of relying on random shuffling, we use a **custom batch sampler** that explicitly controls which pairs appear in each batch. It guarantees **exactly one pair per intent per batch** — making every off-diagonal entry a true negative.
+
+```python
+sampler = IntentAwareBatchSampler(intent_ids, batch_size=20)
+```
+
+**How it works:**
+
+1. Groups pair indices by intent ID:
+   ```
+   intent 0 (track_order):   [index 0, index 20, index 40, ...]
+   intent 1 (cancel_order):  [index 1, index 21, index 41, ...]
+   intent 2 (modify_order):  [index 2, index 22, index 42, ...]
+   ...
+   ```
+
+2. Builds batches by taking **one pair per intent per round**:
+   ```
+   round 0 → [intent0[0], intent1[0], intent2[0], ..., intent19[0]]  ← 20 pairs
+   round 1 → [intent0[1], intent1[1], intent2[1], ..., intent19[1]]  ← 20 pairs
+   round 2 → [intent0[2], intent1[2], intent2[2], ..., intent19[2]]  ← 20 pairs
+   ```
+
+3. Each batch contains exactly one pair per intent → similarity matrix off-diagonal = true negatives only:
+   ```
+                pos0          pos1           pos2
+             (track_order) (cancel_order) (modify_order)
+   anchor0     0.92 ✓        0.21 ✗          0.18 ✗
+   anchor1     0.19 ✗        0.89 ✓          0.22 ✗
+   anchor2     0.15 ✗        0.20 ✗          0.91 ✓
+
+   diagonal   = correct matches  → pushed HIGH
+   off-diagonal = different intents → pushed LOW (always true negatives)
+   ```
+
+**Comparison:**
+
+| Approach | False negatives | Implementation |
+|---|---|---|
+| Random shuffle | Possible — ~2-3 per batch | Simple |
+| Interleaved order | Rare — depends on batch size | Medium |
+| `IntentAwareBatchSampler` | Zero — guaranteed | Custom sampler |
+
+#### Further reading
+
+- [Supervised Contrastive Learning](https://arxiv.org/abs/2004.11362) — formally addresses the false negative problem in contrastive learning
+- [SimCSE](https://arxiv.org/abs/2104.08821) — state-of-the-art sentence embeddings with deep discussion of in-batch negatives
+- [Sentence-BERT](https://arxiv.org/abs/1908.10084) — section 4 discusses negative selection strategies
+- [DPR](https://arxiv.org/abs/2004.04906) — Facebook's dense retrieval paper, entire section dedicated to hard negative mining
+
+#### Quick test
+
+```python
+from data_preparation import load_dataset, create_training_pairs, IntentAwareBatchSampler
+
+train_data, val_data, test_data = load_dataset()
+pairs, intent_ids = create_training_pairs(train_data, pairs_per_intent=20)
+
+print(len(pairs))        # 400 (20 intents × 20 pairs)
+print(pairs[0].texts)    # ["where is my order?", "track my package"]
+print(intent_ids[0])     # 0 (track_order)
+
+sampler = IntentAwareBatchSampler(intent_ids, batch_size=20)
+print(len(sampler))      # 20 batches (400 pairs / batch_size 20)
+
+# verify: no two pairs in a batch share the same intent
+for batch_indices in sampler:
+    batch_intents = [intent_ids[i] for i in batch_indices]
+    assert len(batch_intents) == len(set(batch_intents)), "False negative detected!"
+print("All batches clean — zero false negatives confirmed.")
+```
+
+---
 
 ## Dependencies
 
