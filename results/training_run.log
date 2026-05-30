@@ -1,5 +1,6 @@
-$ python train.py
-
+Matplotlib is building the font cache; this may take a moment.
+/Users/subha/Library/Python/3.9/lib/python/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
   Device: cpu
 Loading e-commerce intent dataset...
   Trying HuggingFace Hub...
@@ -9,6 +10,8 @@ Loading e-commerce intent dataset...
   Val     : 3,000 queries
   Test    : 4,500 queries
 
+  Adjusting batch size: 20 → 150 (= n_intents)
+
 Building tokenizer...
   Vocab size: 3689
 
@@ -17,26 +20,26 @@ Building model...
 
 Creating training pairs...
   Created 3,000 training pairs across 150 intents
-  Warning: batch_size 20 is not a multiple of n_intents 150. Some batches may have slight intent imbalance.
   Pairs         : 3,000
-  Batches/epoch : 150
+  Batches/epoch : 20
 
 Training for 15 epochs...
-  Epoch 01 | loss 2.5949 | acc 22.1% | time 2.6s
-  Epoch 02 | loss 1.2942 | acc 59.1% | time 3.0s
-  Epoch 03 | loss 0.6335 | acc 79.4% | time 2.7s
-  Epoch 04 | loss 0.3193 | acc 89.6% | time 2.8s
-  Epoch 05 | loss 0.1796 | acc 93.7% | time 2.7s
-  Epoch 06 | loss 0.1311 | acc 95.8% | time 2.7s
-  Epoch 07 | loss 0.0751 | acc 97.4% | time 2.5s
-  Epoch 08 | loss 0.0637 | acc 98.2% | time 2.8s
-  Epoch 09 | loss 0.0391 | acc 98.9% | time 2.7s
-  Epoch 10 | loss 0.0326 | acc 99.2% | time 2.7s
-  Epoch 11 | loss 0.0205 | acc 99.5% | time 2.6s
-  Epoch 12 | loss 0.0154 | acc 99.5% | time 2.5s
-  Epoch 13 | loss 0.0109 | acc 99.8% | time 2.5s
-  Epoch 14 | loss 0.0134 | acc 99.7% | time 2.6s
-  Epoch 15 | loss 0.0108 | acc 99.7% | time 2.5s
+  Epoch 01 | loss 5.0790 | acc 2.5% | time 2.2s
+  Epoch 02 | loss 4.8561 | acc 4.0% | time 1.9s
+  Epoch 03 | loss 4.3312 | acc 9.8% | time 1.9s
+  Epoch 04 | loss 3.5551 | acc 19.6% | time 1.9s
+  Epoch 05 | loss 2.7912 | acc 31.6% | time 1.9s
+  Epoch 06 | loss 2.1563 | acc 44.4% | time 1.9s
+  Epoch 07 | loss 1.7581 | acc 52.8% | time 1.9s
+  Epoch 08 | loss 1.4027 | acc 61.5% | time 2.0s
+  Epoch 09 | loss 1.1746 | acc 66.2% | time 2.0s
+  Epoch 10 | loss 0.9890 | acc 71.7% | time 1.9s
+  Epoch 11 | loss 0.8765 | acc 73.7% | time 2.0s
+  Epoch 12 | loss 0.7475 | acc 77.8% | time 2.0s
+  Epoch 13 | loss 0.6737 | acc 80.4% | time 1.9s
+  Epoch 14 | loss 0.6302 | acc 81.9% | time 2.0s
+  Epoch 15 | loss 0.5819 | acc 83.2% | time 2.0s
+  Plot      → ../models/finetuned/training_curves.png
 
   Model     → ../models/finetuned/model.pt
   Tokenizer → ../models/finetuned/tokenizer.json
