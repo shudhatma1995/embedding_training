@@ -317,6 +317,14 @@ def train(args) -> tuple:
     # ── Step 1: Load data ──────────────────────────────────────
     train_data, val_data, test_data = load_dataset()
 
+    # override batch size to match actual number of intents loaded
+    # this guarantees one pair per intent per batch → zero false negatives
+    # works for both 20 intents (synthetic) and 150 intents (CLINC)
+    n_intents = len(train_data)
+    if args.batch_size != n_intents:
+        print(f"\n  Adjusting batch size: {args.batch_size} → {n_intents} (= n_intents)")
+        args.batch_size = n_intents
+
     # ── Step 2: Build tokenizer ────────────────────────────────
     print("\nBuilding tokenizer...")
 
@@ -434,7 +442,8 @@ if __name__ == "__main__":
     parser.add_argument("--epochs",           type=int,   default=15)
 
     # number of pairs per batch
-    # must equal number of intents (20) for zero false negatives
+    # automatically overridden to match n_intents after data is loaded
+    # so zero false negatives are always guaranteed regardless of dataset
     parser.add_argument("--batch-size",       type=int,   default=20)
 
     # how many training pairs to create per intent
