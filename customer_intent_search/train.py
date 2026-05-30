@@ -8,6 +8,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
+import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
 
 from tokenizer import SimpleTokenizer
 from model import build_model
@@ -291,6 +293,78 @@ def train_one_epoch(
     return {"loss": avg_loss, "accuracy": accuracy}
 
 
+def plot_training_history(history: list, output_dir: str):
+    """
+    Generate and save training charts after training completes.
+
+    Produces one figure with two side-by-side plots:
+        Left  — Loss curve    : how loss decreased each epoch
+        Right — Accuracy curve: how accuracy improved each epoch
+
+    Args:
+        history:    list of {"loss": float, "accuracy": float} per epoch
+        output_dir: directory to save the chart
+    """
+    epochs   = list(range(1, len(history) + 1))
+    losses   = [h["loss"]     for h in history]
+    accs     = [h["accuracy"] * 100 for h in history]  # convert to percentage
+
+    # create figure with two side-by-side subplots
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
+    fig.suptitle("Training History — MiniIntentEmbedder", fontsize=14, fontweight="bold")
+
+    # ── left plot: loss curve ──────────────────────────────────
+    ax1.plot(epochs, losses, color="#e74c3c", linewidth=2, marker="o", markersize=4)
+
+    # shade area under the curve for visual appeal
+    ax1.fill_between(epochs, losses, alpha=0.1, color="#e74c3c")
+
+    # annotate first and last loss values
+    ax1.annotate(f"{losses[0]:.2f}",  xy=(epochs[0],  losses[0]),
+                 xytext=(8, 8),  textcoords="offset points", fontsize=9, color="#e74c3c")
+    ax1.annotate(f"{losses[-1]:.4f}", xy=(epochs[-1], losses[-1]),
+                 xytext=(-30, 8), textcoords="offset points", fontsize=9, color="#e74c3c")
+
+    ax1.set_title("Loss per Epoch", fontsize=12)
+    ax1.set_xlabel("Epoch")
+    ax1.set_ylabel("Cross-Entropy Loss")
+    ax1.set_xticks(epochs)
+    ax1.grid(True, alpha=0.3)
+
+    # ── right plot: accuracy curve ─────────────────────────────
+    ax2.plot(epochs, accs, color="#2ecc71", linewidth=2, marker="o", markersize=4)
+
+    # shade area under the curve
+    ax2.fill_between(epochs, accs, alpha=0.1, color="#2ecc71")
+
+    # annotate first and last accuracy values
+    ax2.annotate(f"{accs[0]:.1f}%",  xy=(epochs[0],  accs[0]),
+                 xytext=(8, -15), textcoords="offset points", fontsize=9, color="#2ecc71")
+    ax2.annotate(f"{accs[-1]:.1f}%", xy=(epochs[-1], accs[-1]),
+                 xytext=(-40, -15), textcoords="offset points", fontsize=9, color="#2ecc71")
+
+    # draw a horizontal dashed line at 95% as a quality reference
+    ax2.axhline(y=95, color="gray", linestyle="--", alpha=0.5, label="95% reference")
+    ax2.legend(fontsize=9)
+
+    ax2.set_title("Recall@1 Accuracy per Epoch", fontsize=12)
+    ax2.set_xlabel("Epoch")
+    ax2.set_ylabel("Accuracy (%)")
+    ax2.set_ylim(0, 105)
+    ax2.set_xticks(epochs)
+    ax2.grid(True, alpha=0.3)
+
+    plt.tight_layout()
+
+    # save to results directory
+    plot_path = os.path.join(output_dir, "training_curves.png")
+    plt.savefig(plot_path, dpi=150, bbox_inches="tight")
+    plt.close()
+
+    print(f"  Plot      → {plot_path}")
+    return plot_path
+
+
 def train(args) -> tuple:
     """
     Full training pipeline:
@@ -426,6 +500,9 @@ def train(args) -> tuple:
             "vocab_size":       tokenizer.vocab_size,
             "history":          history,
         }, f, indent=2)
+
+    # generate and save training charts
+    plot_training_history(history, args.output_dir)
 
     print(f"\n  Model     → {model_path}")
     print(f"  Tokenizer → {tok_path}")
