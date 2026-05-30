@@ -25,6 +25,9 @@ This repo is built **step by step**. You can clone it, follow each step in order
 - [Step 6 — Training](#step-6--training)
   - [Overfitting tracking](#overfitting-tracking)
   - [Temperature experiments](#temperature-experiments)
+  - [What temperature controls](#what-temperature-controls)
+  - [Experiment results](#experiment-results)
+  - [Comparison charts](#comparison-charts)
   - [Key findings](#key-findings)
 - [Dependencies](#dependencies)
 
@@ -1268,53 +1271,128 @@ This trains three models with different temperature values and saves:
 - Per-experiment training curves → `results/experiments/temp_X/`
 - Cross-experiment comparison chart → `results/experiments/experiment_comparison.png`
 
-**What temperature controls:**
+---
 
-Temperature τ scales similarity scores before the softmax in the loss function:
+#### What temperature controls
+
+Temperature τ is a single number that divides every similarity score **before** the softmax in the contrastive loss:
 
 ```
-low  τ = 0.01 → scores very peaked → model punished harshly for any confusion
-mid  τ = 0.05 → scores sharp       → strong but stable training signal (default)
-high τ = 0.20 → scores flat        → model punished gently → slower but more stable
+sim_matrix / τ  →  softmax  →  cross-entropy loss
 ```
 
-**Actual results from running the experiments:**
+The lower τ is, the more the softmax "zooms in" on differences between scores:
 
-| Experiment | Best Val Acc | Best Epoch | Final Val Loss | Overfitting |
+```
+raw scores for anchor_0:   [0.90 (correct), 0.20 (wrong), 0.15 (wrong)]
+
+τ = 0.20  →  [4.5,  1.0,  0.75]  →  softmax → [0.94, 0.06, 0.05]   soft — wrong answers still get ~5%
+τ = 0.05  →  [18.0, 4.0,  3.0 ]  →  softmax → [0.999, 0.000, 0.000] sharp — wrong answers get almost 0
+τ = 0.01  →  [90.0, 20.0, 15.0]  →  softmax → [1.000, 0.000, 0.000] extreme — any confusion is crushed
+```
+
+**Low τ** — harsh signal. The model is punished very hard even for small confusions between intents. It learns quickly but tends to memorise training pairs rather than generalise. Higher overfitting risk.
+
+**High τ** — gentle signal. The model is barely penalised for small confusions. It learns more slowly and more stably, but may not separate intents as sharply.
+
+**Medium τ** — the sweet spot. The signal is strong enough to push intents apart clearly, but not so extreme that the model memorises surface-level phrasings.
+
+---
+
+#### Experiment results
+
+Three models were trained for 15 epochs each with identical settings except temperature.
+
+**Top-line numbers:**
+
+| Experiment | Best Val Acc | Best Epoch | Final Val Loss | Final Train Acc | Overfitting Gap |
+|---|---|---|---|---|---|
+| temp=0.01 | 58.9% | epoch 15 | 2.6450 | 81.0% | 2.04 ⚠ severe |
+| **temp=0.05** | **59.5%** | **epoch 14** | **2.0408** | **85.5%** | **1.49 ⚠ moderate** |
+| temp=0.20 | 57.1% | epoch 15 | 2.4293 | 76.5% | 0.33 ✓ healthy |
+
+**Training progression — val accuracy at key epochs:**
+
+| Experiment | Epoch 1 | Epoch 8 | Epoch 15 | Val acc gain (1→15) |
 |---|---|---|---|---|
-| temp=0.01 | 58.9% | epoch 15 | 2.6450 | ⚠ severe (gap=2.04) |
-| temp=0.05 | **59.5%** | epoch 14 | 2.0408 | ⚠ moderate (gap=1.49) |
-| temp=0.20 | 57.1% | epoch 15 | 2.4293 | ✓ healthy (gap=0.33) |
+| temp=0.01 | 14.5% | 52.3% | 58.9% | +44.4 pp |
+| temp=0.05 | 14.2% | 52.9% | 59.4% | +45.2 pp |
+| temp=0.20 | 13.9% | 48.6% | 57.1% | +43.2 pp |
+
+All three start at ~14% (near chance for 150 intents) and converge similarly. The differences emerge in how much each one generalises vs memorises.
+
+**Train vs val accuracy gap at epoch 15:**
+
+| Experiment | Train acc | Val acc | Gap (train − val) |
+|---|---|---|---|
+| temp=0.01 | 81.0% | 58.9% | 22.1 pp |
+| temp=0.05 | 85.5% | 59.4% | 26.1 pp |
+| temp=0.20 | 76.5% | 57.1% | 19.5 pp |
+
+`temp=0.20` has the smallest train–val gap — it is the most stable and least overfit. But its train accuracy is also lowest, meaning the model stopped learning as much. `temp=0.01` and `temp=0.05` both push train accuracy higher (they learn harder) but at the cost of a larger gap.
+
+**When does overfitting start?**
+
+| Experiment | Overfitting flag first appears | Overfitting definition used |
+|---|---|---|
+| temp=0.01 | Epoch 9 | val_loss − train_loss > 1.0 |
+| temp=0.05 | Epoch 9 | val_loss − train_loss > 1.0 |
+| temp=0.20 | Never in 15 epochs | gap stayed at 0.33 |
+
+`temp=0.20` never triggers the overfitting flag — consistent with its gentler training signal allowing slower, more stable generalisation.
+
+---
+
+#### Comparison charts
+
+The 4-panel chart at `results/experiments/experiment_comparison.png` shows:
+
+| Panel | What it shows | What to look for |
+|---|---|---|
+| Top-left | Val loss curves per experiment | Lower is better; watch for divergence late in training |
+| Top-right | Val accuracy curves with best-epoch markers | Higher is better; dots show peak per experiment |
+| Bottom-left | Overfitting gap (val_loss − train_loss) over epochs | Flat = stable; steep rise = memorising |
+| Bottom-right | Best val accuracy bar chart per experiment | Quick winner summary |
+
+Per-experiment training curves (train + val loss, train + val acc, gap, val trend) are at `results/experiments/temp_X/training_curves_temp=X.png`.
 
 ---
 
 #### Key findings
 
-**Finding 1 — Temperature sweet spot is τ=0.05**
+**Finding 1 — Temperature sweet spot is τ = 0.05**
 
-`temp=0.05` achieves the best validation accuracy (59.5%) while maintaining a manageable overfitting gap. Very low temperature (`0.01`) produces a harsh signal that memorises training pairs faster — large overfitting gap. High temperature (`0.20`) is stable but converges slower — never reaches the same val accuracy within 15 epochs.
+`temp=0.05` achieves the best validation accuracy (59.5%) and the best final val loss (2.04). Very low temperature (`0.01`) produces a harsh training signal that pushes train accuracy to 81% but results in the worst val loss (2.64) and a severe overfitting gap of 2.04 — the model is memorising phrasings more than learning intent meaning. High temperature (`0.20`) is the most stable (gap=0.33) but the gentleness of the signal means the model never separates intents as sharply.
 
-**Finding 2 — Overfitting starts at epoch 9**
+**Finding 2 — Overfitting starts at epoch 9 for sharp temperatures**
 
-Across all experiments, the overfitting flag appears around epoch 8-9. This is when the train-val gap crosses 1.0. The model has learned the general structure of intents by epoch 8 — after that it's memorising specific phrasings from the training pairs.
+For `temp=0.01` and `temp=0.05`, the overfitting flag appears at epoch 9 — this is when train loss has dropped far enough that the val_loss − train_loss gap crosses 1.0. Before epoch 9, both metrics are moving together (healthy learning). After epoch 9, train loss keeps dropping but val loss plateaus — the model starts memorising specific phrasings from training pairs.
 
-**Finding 3 — Val accuracy still improving despite overfitting flag**
+`temp=0.20` never hits this threshold. Its gentler signal means train loss never drops fast enough to create a large gap — the trade-off is slower convergence overall.
 
-Interestingly, val accuracy continues to improve even after the overfitting flag appears (epoch 9 → 59.5% at epoch 14). This happens because:
-- The loss gap measures raw loss values (sensitive to scale)
-- Val accuracy measures retrieval ranking (more robust)
-- Even a slightly overfit model can still rank the correct intent highest
+**Finding 3 — Val accuracy keeps improving past the overfitting flag**
 
-This suggests the `> 0.5 gap` threshold for our overfitting flag is conservative. A better early stopping criterion would be: stop when val accuracy has not improved for 3 consecutive epochs.
+Even after the overfitting flag appears at epoch 9, val accuracy continues to improve — from ~55% at epoch 9 to ~59.5% at epoch 14. This seems contradictory: the model is overfitting, yet val accuracy is still going up. Why?
 
-**Finding 4 — 150 intents is a hard problem for this model**
+The overfitting gap measures **raw loss values**, which are sensitive to scale. Val accuracy measures **retrieval ranking** — whether the correct intent is ranked first. A model can have a rising loss gap while still slightly improving its ranking because:
+- Loss penalises every small confusion, even when the correct answer is still ranked first
+- Accuracy only cares about the top-1 prediction
 
-With 150 intents, the model achieves only ~59% val accuracy — far below the 99.7% seen in the original run. The original run used batch_size=20 with only 19 negatives per anchor — much easier. With 149 negatives per anchor, the model needs more training data and more epochs to converge. This is a known scaling challenge for small contrastive models.
+This means the `> 1.0 gap` threshold for our flag is conservative. A better early-stopping criterion: stop when val accuracy has not improved for 3 consecutive epochs (patience=3).
 
-**What to try next to improve:**
-- More pairs per intent: `--pairs-per-intent 40`
-- More epochs: `--epochs 30`
-- Larger model: increase `embed_dim` and `n_layers` in `MiniIntentConfig`
+**Finding 4 — 150 intents is a hard classification problem for this model size**
+
+All experiments top out at ~59% val accuracy. This is much lower than what you would expect on a 20-intent problem (where similar setups reach 90%+). Why?
+
+With 150 intents, each batch contains 149 negatives per anchor. The model must simultaneously learn to separate 150 distinct intent clusters. Our model has only 872K parameters trained on 3,000 pairs — a very small data-to-class ratio. More training data and a longer training schedule are the most direct fixes:
+
+```bash
+# try these to push val accuracy higher
+python3 train.py --pairs-per-intent 40 --epochs 30
+python3 train.py --pairs-per-intent 40 --epochs 30 --temperature 0.05
+```
+
+Larger model capacity (`embed_dim=256`, `n_layers=4`) would also help if you want to go further.
 
 ---
 
