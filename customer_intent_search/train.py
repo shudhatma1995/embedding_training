@@ -9,11 +9,13 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
 import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
 
 from tokenizer import SimpleTokenizer
 from model import build_model
 from data_preparation import load_dataset, create_training_pairs, IntentAwareBatchSampler
+
+
+# ── Loss Function ──────────────────────────────────────────────────────────────
 
 class MultipleNegativesRankingLoss(nn.Module):
     """
@@ -61,6 +63,8 @@ class MultipleNegativesRankingLoss(nn.Module):
         return loss
 
 
+# ── Dataset ────────────────────────────────────────────────────────────────────
+
 class PairDataset(Dataset):
     """
     Wraps a list of InputExample pairs for PyTorch DataLoader.
@@ -74,103 +78,147 @@ class PairDataset(Dataset):
 
     def __len__(self):
         # tells DataLoader how many items exist in total
-        # e.g. 400 pairs → 400
         return len(self.pairs)
 
     def __getitem__(self, idx):
-        # DataLoader calls this with a specific index
-        # returns the two texts for that pair as a tuple
-        # e.g. idx=0 → ("where is my order?", "track my package")
+        # returns (anchor_text, positive_text) for this index
         anchor   = self.pairs[idx].texts[0]
         positive = self.pairs[idx].texts[1]
         return anchor, positive
 
 
+# ── Collate Function ───────────────────────────────────────────────────────────
+
 def make_collate_fn(tokenizer):
     """
-    Returns a function that tokenizes a batch of (anchor, positive) pairs.
-
-    Why a closure?
-    DataLoader expects collate_fn to take only one argument (the batch).
-    But we also need the tokenizer inside. A closure captures the tokenizer
-    in the outer scope so the inner function can use it without being passed
-    as an argument.
-
-    DataLoader calls collate_fn with:
-        batch = [
-            ("where is my order",  "track my package"),      ← item 0
-            ("cancel my order",    "I want to cancel"),      ← item 1
-            ("where is my refund", "refund not received"),   ← item 2
-            ...
-        ]
-
-    Returns four tensors:
-        anchor_ids:    (batch_size, max_seq_len)
-        anchor_mask:   (batch_size, max_seq_len)
-        positive_ids:  (batch_size, max_seq_len)
-        positive_mask: (batch_size, max_seq_len)
+    Returns a closure that tokenizes a batch of (anchor, positive) pairs.
+    DataLoader calls this to convert raw strings into tensors.
     """
 
     def collate_fn(batch):
-        # batch is a list of (anchor_text, positive_text) tuples
-        # separate anchors and positives into two lists
-        # e.g. anchors   = ["where is my order",  "cancel my order", ...]
-        # e.g. positives = ["track my package",   "I want to cancel", ...]
+        # separate anchors and positives from list of tuples
         anchors   = [item[0] for item in batch]
         positives = [item[1] for item in batch]
 
-        # tokenize anchors → two tensors each shape (batch_size, max_seq_len)
-        # anchor_ids:  token IDs  e.g. [[2, 45, 12, 0, ...], [2, 33, 0, ...]]
-        # anchor_mask: 1=real token, 0=padding
+        # tokenize both into tensors of shape (batch_size, max_seq_len)
         anchor_ids,   anchor_mask   = tokenizer.encode_batch(anchors)
-
-        # tokenize positives → same structure
         positive_ids, positive_mask = tokenizer.encode_batch(positives)
 
         return anchor_ids, anchor_mask, positive_ids, positive_mask
 
-    # return the inner function — this is what DataLoader will call
     return collate_fn
 
 
+# ── Learning Rate Scheduler ────────────────────────────────────────────────────
+
 def make_scheduler(optimizer, warmup_steps: int, total_steps: int):
     """
-    Learning rate schedule: linear warmup then linear decay.
+    Linear warmup then linear decay to 10% of initial LR.
 
-    warmup phase  (steps 0 → warmup_steps):
-        lr increases linearly from 0 → initial_lr
-
-    decay phase   (steps warmup_steps → total_steps):
-        lr decreases linearly from initial_lr → 0.1 * initial_lr
-
-    Why warmup?
-        At the start weights are random. A large lr causes huge unstable
-        updates. Warming up gradually lets the model settle before applying
-        the full learning rate.
-
-    Why decay?
-        As training progresses the model is close to a good solution.
-        Smaller steps prevent overshooting and help fine convergence.
+    warmup: steps 0 → warmup_steps  — lr ramps 0 → initial_lr
+    decay:  steps warmup_steps → total_steps — lr ramps initial_lr → 0.1*initial_lr
     """
 
     def lr_lambda(current_step: int):
-
         # warmup phase: ramp from 0.0 → 1.0
-        # e.g. warmup_steps=50, current_step=25 → 25/50 = 0.5 → 50% of lr
         if current_step < warmup_steps:
             return current_step / max(1, warmup_steps)
-
         # decay phase: ramp from 1.0 → 0.1
-        # progress goes from 0.0 (start of decay) to 1.0 (end of training)
         progress = (current_step - warmup_steps) / max(1, total_steps - warmup_steps)
-
-        # at progress=0.0 → lr = 1.0 * initial_lr
-        # at progress=1.0 → lr = 0.1 * initial_lr
-        # never drops below 10% of initial lr
         return max(0.1, 1.0 - 0.9 * progress)
 
     return torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda)
 
+
+# ── Validation Evaluation ──────────────────────────────────────────────────────
+
+def evaluate_val(
+    model,
+    val_data: dict,
+    tokenizer,
+    loss_fn,
+    device: str,
+    pairs_per_intent: int = 10,
+    seed: int = 42,
+) -> dict:
+    """
+    Evaluate the model on the validation set.
+
+    Why we need this:
+        Training metrics only tell us how well the model fits training data.
+        Validation metrics tell us how well it generalises to unseen data.
+        If train loss drops but val loss rises → overfitting.
+
+    How it works:
+        1. Create val pairs from val_data (separate from training pairs)
+        2. Run model in eval mode (dropout disabled)
+        3. Compute val loss and val Recall@1 accuracy
+        4. No gradient updates — purely measurement
+
+    Returns:
+        dict with val_loss and val_accuracy
+    """
+
+    # create validation pairs — different queries from the val split
+    # uses a different seed from training to avoid overlap
+    val_pairs, val_intent_ids = create_training_pairs(
+        val_data,
+        pairs_per_intent=pairs_per_intent,
+        seed=seed + 1,   # different seed from training pairs
+    )
+
+    # build val dataloader — same structure as training
+    n_intents  = len(val_data)
+    val_sampler = IntentAwareBatchSampler(val_intent_ids, batch_size=n_intents)
+    val_dataset = PairDataset(val_pairs)
+    val_loader  = DataLoader(
+        val_dataset,
+        batch_sampler=val_sampler,
+        collate_fn=make_collate_fn(tokenizer),
+    )
+
+    # switch to eval mode — disables dropout so results are deterministic
+    model.eval()
+
+    total_loss    = 0.0
+    total_correct = 0
+    total_pairs   = 0
+
+    # torch.no_grad() — skip gradient computation entirely
+    # saves memory and speeds up inference
+    with torch.no_grad():
+        for anchor_ids, anchor_mask, positive_ids, positive_mask in val_loader:
+
+            anchor_ids    = anchor_ids.to(device)
+            anchor_mask   = anchor_mask.to(device)
+            positive_ids  = positive_ids.to(device)
+            positive_mask = positive_mask.to(device)
+
+            # forward pass — same as training but no backward
+            anchor_emb   = model(anchor_ids,   anchor_mask)
+            positive_emb = model(positive_ids, positive_mask)
+
+            # compute val loss
+            loss = loss_fn(anchor_emb, positive_emb)
+            total_loss += loss.item()
+
+            # compute val accuracy — argmax of similarity matrix diagonal
+            sim       = torch.matmul(anchor_emb, positive_emb.T)
+            predicted = sim.argmax(dim=1)
+            labels    = torch.arange(sim.shape[0], device=device)
+            total_correct += (predicted == labels).sum().item()
+            total_pairs   += sim.shape[0]
+
+    # switch back to training mode for next epoch
+    model.train()
+
+    return {
+        "val_loss":     total_loss / len(val_loader),
+        "val_accuracy": total_correct / total_pairs,
+    }
+
+
+# ── Training Loop ──────────────────────────────────────────────────────────────
 
 def train_one_epoch(
     model,
@@ -178,38 +226,18 @@ def train_one_epoch(
     optimizer,
     scheduler,
     loss_fn,
-    device,
+    device: str,
     epoch: int,
+    val_data: dict = None,
+    tokenizer=None,
 ) -> dict:
     """
     Run one full pass over all training batches.
+    Optionally evaluates on val set at end of epoch.
 
-    One epoch = model sees every training pair exactly once.
-    Returns avg loss and accuracy for this epoch.
-
-    for each batch:
-
-    1. FORWARD
-        anchor_ids → model → anchor_emb   (batch_size, 128)
-        positive_ids → model → positive_emb (batch_size, 128)
-        loss = cross_entropy(sim_matrix)
-
-    2. BACKWARD
-        optimizer.zero_grad()   ← clear old gradients
-        loss.backward()         ← compute new gradients
-        clip_grad_norm_()       ← prevent explosions
-
-    3. UPDATE
-        optimizer.step()        ← adjust weights
-        scheduler.step()        ← adjust learning rate
-
-    4. METRICS
-        track loss and accuracy for reporting
+    Returns dict with train_loss, train_accuracy, and optionally val metrics.
     """
 
-    # set model to training mode
-    # enables dropout (randomly zeros activations during training)
-    # dropout is disabled during evaluation via model.eval()
     model.train()
 
     total_loss    = 0.0
@@ -217,147 +245,188 @@ def train_one_epoch(
     total_pairs   = 0
     start_time    = time.time()
 
-    for batch_idx, (anchor_ids, anchor_mask, positive_ids, positive_mask) in enumerate(dataloader):
+    for anchor_ids, anchor_mask, positive_ids, positive_mask in dataloader:
 
-        # ── move tensors to device (CPU or GPU) ───────────────
-        # model and data must be on the same device
+        # move to device
         anchor_ids    = anchor_ids.to(device)
         anchor_mask   = anchor_mask.to(device)
         positive_ids  = positive_ids.to(device)
         positive_mask = positive_mask.to(device)
 
-        # ── forward pass ──────────────────────────────────────
-        # embed anchors   → (batch_size, 128) L2 normalised vectors
-        # embed positives → (batch_size, 128) L2 normalised vectors
+        # forward pass
         anchor_emb   = model(anchor_ids,   anchor_mask)
         positive_emb = model(positive_ids, positive_mask)
 
-        # ── compute loss ──────────────────────────────────────
-        # builds similarity matrix, computes cross entropy
-        # loss is high when diagonal is not the highest in each row
+        # compute loss
         loss = loss_fn(anchor_emb, positive_emb)
 
-        # ── backward pass ─────────────────────────────────────
-        # clear gradients from previous batch
-        # must do this before every backward() call
-        # otherwise gradients accumulate across batches
+        # backward pass
         optimizer.zero_grad()
-
-        # compute gradients for all parameters
-        # traces back through the computation graph
         loss.backward()
-
-        # clip gradients — prevents exploding gradients
-        # if any gradient vector has norm > 1.0, scale it down
-        # keeps updates stable, especially early in training
         torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
-
-        # update model weights using computed gradients
         optimizer.step()
-
-        # update learning rate according to schedule
         scheduler.step()
 
-        # ── track metrics ─────────────────────────────────────
-        # accumulate loss for this batch
+        # track training metrics
         total_loss += loss.item()
 
-        # compute accuracy — no gradients needed here
         with torch.no_grad():
-
-            # similarity matrix (batch_size, batch_size)
-            sim = torch.matmul(anchor_emb, positive_emb.T)
-
-            # for each anchor, find which positive scored highest
-            # e.g. predicted = [0, 1, 2, ..., 19] if perfect
-            predicted = sim.argmax(dim=1)
-
-            # correct answer = diagonal index for each anchor
-            # e.g. labels = [0, 1, 2, ..., 19]
-            labels = torch.arange(sim.shape[0], device=device)
-
-            # count how many anchors found their correct positive
+            sim           = torch.matmul(anchor_emb, positive_emb.T)
+            predicted     = sim.argmax(dim=1)
+            labels        = torch.arange(sim.shape[0], device=device)
             total_correct += (predicted == labels).sum().item()
             total_pairs   += sim.shape[0]
 
-    # ── epoch summary ──────────────────────────────────────────
-    elapsed  = time.time() - start_time
-    avg_loss = total_loss / len(dataloader)
-    accuracy = total_correct / total_pairs
+    elapsed        = time.time() - start_time
+    train_loss     = total_loss / len(dataloader)
+    train_accuracy = total_correct / total_pairs
 
-    print(f"  Epoch {epoch:02d} | "
-          f"loss {avg_loss:.4f} | "
-          f"acc {accuracy*100:.1f}% | "
-          f"time {elapsed:.1f}s")
+    # build metrics dict — start with training metrics
+    metrics = {
+        "loss":     train_loss,
+        "accuracy": train_accuracy,
+    }
 
-    return {"loss": avg_loss, "accuracy": accuracy}
+    # optionally evaluate on validation set
+    if val_data is not None and tokenizer is not None:
+        val_metrics = evaluate_val(model, val_data, tokenizer, loss_fn, device)
+        metrics["val_loss"]     = val_metrics["val_loss"]
+        metrics["val_accuracy"] = val_metrics["val_accuracy"]
+
+        # overfitting indicator: gap between train and val loss
+        # small gap  → generalising well
+        # large gap  → memorising training data
+        gap = val_metrics["val_loss"] - train_loss
+        overfit_flag = " ⚠ overfit?" if gap > 1.0 else ""
+
+        print(f"  Epoch {epoch:02d} | "
+              f"train_loss {train_loss:.4f} | train_acc {train_accuracy*100:.1f}% | "
+              f"val_loss {val_metrics['val_loss']:.4f} | val_acc {val_metrics['val_accuracy']*100:.1f}% | "
+              f"time {elapsed:.1f}s{overfit_flag}")
+    else:
+        print(f"  Epoch {epoch:02d} | "
+              f"loss {train_loss:.4f} | acc {train_accuracy*100:.1f}% | "
+              f"time {elapsed:.1f}s")
+
+    return metrics
 
 
-def plot_training_history(history: list, output_dir: str):
+# ── Plotting ───────────────────────────────────────────────────────────────────
+
+def plot_training_history(history: list, output_dir: str, label: str = ""):
     """
-    Generate and save training charts after training completes.
+    Generate and save training charts showing train vs val curves.
 
-    Produces one figure with two side-by-side plots:
-        Left  — Loss curve    : how loss decreased each epoch
-        Right — Accuracy curve: how accuracy improved each epoch
+    Four subplots:
+        Top-left:  Train loss vs Val loss     — overfitting visible as gap
+        Top-right: Train acc  vs Val acc      — generalisation visible
+        Bottom-left:  Loss gap (val-train)    — direct overfitting signal
+        Bottom-right: Val accuracy trend      — best val accuracy highlighted
 
-    Args:
-        history:    list of {"loss": float, "accuracy": float} per epoch
-        output_dir: directory to save the chart
+    If val metrics are not in history, falls back to train-only plots.
     """
-    epochs   = list(range(1, len(history) + 1))
-    losses   = [h["loss"]     for h in history]
-    accs     = [h["accuracy"] * 100 for h in history]  # convert to percentage
 
-    # create figure with two side-by-side subplots
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
-    fig.suptitle("Training History — MiniIntentEmbedder", fontsize=14, fontweight="bold")
+    epochs      = list(range(1, len(history) + 1))
+    train_loss  = [h["loss"]     for h in history]
+    train_acc   = [h["accuracy"] * 100 for h in history]
+    has_val     = "val_loss" in history[0]
 
-    # ── left plot: loss curve ──────────────────────────────────
-    ax1.plot(epochs, losses, color="#e74c3c", linewidth=2, marker="o", markersize=4)
+    if has_val:
+        val_loss = [h["val_loss"]     for h in history]
+        val_acc  = [h["val_accuracy"] * 100 for h in history]
 
-    # shade area under the curve for visual appeal
-    ax1.fill_between(epochs, losses, alpha=0.1, color="#e74c3c")
+    title = f"Training History — MiniIntentEmbedder"
+    if label:
+        title += f" ({label})"
 
-    # annotate first and last loss values
-    ax1.annotate(f"{losses[0]:.2f}",  xy=(epochs[0],  losses[0]),
-                 xytext=(8, 8),  textcoords="offset points", fontsize=9, color="#e74c3c")
-    ax1.annotate(f"{losses[-1]:.4f}", xy=(epochs[-1], losses[-1]),
-                 xytext=(-30, 8), textcoords="offset points", fontsize=9, color="#e74c3c")
+    if has_val:
+        fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+        fig.suptitle(title, fontsize=14, fontweight="bold")
+        ax1, ax2 = axes[0]
+        ax3, ax4 = axes[1]
+    else:
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
+        fig.suptitle(title, fontsize=14, fontweight="bold")
 
-    ax1.set_title("Loss per Epoch", fontsize=12)
+    # ── top-left: loss curves ──────────────────────────────────
+    ax1.plot(epochs, train_loss, color="#e74c3c", linewidth=2,
+             marker="o", markersize=4, label="Train loss")
+    if has_val:
+        ax1.plot(epochs, val_loss, color="#e67e22", linewidth=2,
+                 marker="s", markersize=4, linestyle="--", label="Val loss")
+        # shade gap between train and val loss to show overfitting
+        ax1.fill_between(epochs, train_loss, val_loss,
+                         alpha=0.15, color="#e67e22", label="Overfitting gap")
+    ax1.fill_between(epochs, train_loss, alpha=0.08, color="#e74c3c")
+    ax1.annotate(f"{train_loss[-1]:.4f}", xy=(epochs[-1], train_loss[-1]),
+                 xytext=(-35, 8), textcoords="offset points", fontsize=9, color="#e74c3c")
+    if has_val:
+        ax1.annotate(f"{val_loss[-1]:.4f}", xy=(epochs[-1], val_loss[-1]),
+                     xytext=(-35, -15), textcoords="offset points", fontsize=9, color="#e67e22")
+    ax1.set_title("Loss: Train vs Validation", fontsize=12)
     ax1.set_xlabel("Epoch")
     ax1.set_ylabel("Cross-Entropy Loss")
-    ax1.set_xticks(epochs)
+    ax1.legend(fontsize=9)
     ax1.grid(True, alpha=0.3)
 
-    # ── right plot: accuracy curve ─────────────────────────────
-    ax2.plot(epochs, accs, color="#2ecc71", linewidth=2, marker="o", markersize=4)
-
-    # shade area under the curve
-    ax2.fill_between(epochs, accs, alpha=0.1, color="#2ecc71")
-
-    # annotate first and last accuracy values
-    ax2.annotate(f"{accs[0]:.1f}%",  xy=(epochs[0],  accs[0]),
-                 xytext=(8, -15), textcoords="offset points", fontsize=9, color="#2ecc71")
-    ax2.annotate(f"{accs[-1]:.1f}%", xy=(epochs[-1], accs[-1]),
-                 xytext=(-40, -15), textcoords="offset points", fontsize=9, color="#2ecc71")
-
-    # draw a horizontal dashed line at 95% as a quality reference
-    ax2.axhline(y=95, color="gray", linestyle="--", alpha=0.5, label="95% reference")
-    ax2.legend(fontsize=9)
-
-    ax2.set_title("Recall@1 Accuracy per Epoch", fontsize=12)
+    # ── top-right: accuracy curves ─────────────────────────────
+    ax2.plot(epochs, train_acc, color="#2ecc71", linewidth=2,
+             marker="o", markersize=4, label="Train acc")
+    if has_val:
+        ax2.plot(epochs, val_acc, color="#27ae60", linewidth=2,
+                 marker="s", markersize=4, linestyle="--", label="Val acc")
+        # mark best val accuracy
+        best_val_epoch = val_acc.index(max(val_acc)) + 1
+        best_val_value = max(val_acc)
+        ax2.axvline(x=best_val_epoch, color="gray", linestyle=":", alpha=0.7)
+        ax2.annotate(f"best val\n{best_val_value:.1f}%",
+                     xy=(best_val_epoch, best_val_value),
+                     xytext=(8, -20), textcoords="offset points",
+                     fontsize=8, color="#27ae60")
+    ax2.axhline(y=95, color="gray", linestyle="--", alpha=0.4, label="95% reference")
+    ax2.annotate(f"{train_acc[-1]:.1f}%", xy=(epochs[-1], train_acc[-1]),
+                 xytext=(-35, 8), textcoords="offset points", fontsize=9, color="#2ecc71")
+    ax2.set_title("Recall@1: Train vs Validation", fontsize=12)
     ax2.set_xlabel("Epoch")
     ax2.set_ylabel("Accuracy (%)")
-    ax2.set_ylim(0, 105)
-    ax2.set_xticks(epochs)
+    ax2.set_ylim(0, 108)
+    ax2.legend(fontsize=9)
     ax2.grid(True, alpha=0.3)
+
+    if has_val:
+        # ── bottom-left: overfitting gap ──────────────────────
+        gap = [v - t for v, t in zip(val_loss, train_loss)]
+        colors = ["#e74c3c" if g > 0.5 else "#f39c12" if g > 0.2 else "#2ecc71" for g in gap]
+        ax3.bar(epochs, gap, color=colors, alpha=0.7)
+        ax3.axhline(y=0,   color="black", linewidth=0.8)
+        ax3.axhline(y=0.5, color="#e74c3c", linestyle="--", alpha=0.5, label="Overfit threshold")
+        ax3.axhline(y=0.2, color="#f39c12", linestyle="--", alpha=0.5, label="Warning threshold")
+        ax3.set_title("Overfitting Gap (val_loss − train_loss)", fontsize=12)
+        ax3.set_xlabel("Epoch")
+        ax3.set_ylabel("Loss Gap")
+        ax3.legend(fontsize=9)
+        ax3.grid(True, alpha=0.3, axis="y")
+
+        # ── bottom-right: val accuracy with trend ─────────────
+        ax4.plot(epochs, val_acc, color="#3498db", linewidth=2,
+                 marker="o", markersize=4, label="Val accuracy")
+        ax4.fill_between(epochs, val_acc, alpha=0.1, color="#3498db")
+        # highlight best epoch
+        ax4.scatter([best_val_epoch], [best_val_value],
+                    color="#e74c3c", s=100, zorder=5, label=f"Best: {best_val_value:.1f}% @ epoch {best_val_epoch}")
+        ax4.axhline(y=95, color="gray", linestyle="--", alpha=0.4, label="95% reference")
+        ax4.set_title("Validation Accuracy Trend", fontsize=12)
+        ax4.set_xlabel("Epoch")
+        ax4.set_ylabel("Accuracy (%)")
+        ax4.set_ylim(0, 108)
+        ax4.legend(fontsize=9)
+        ax4.grid(True, alpha=0.3)
 
     plt.tight_layout()
 
-    # save to results directory
-    plot_path = os.path.join(output_dir, "training_curves.png")
+    # save plot
+    fname     = f"training_curves_{label}.png" if label else "training_curves.png"
+    plot_path = os.path.join(output_dir, fname)
     plt.savefig(plot_path, dpi=150, bbox_inches="tight")
     plt.close()
 
@@ -365,35 +434,93 @@ def plot_training_history(history: list, output_dir: str):
     return plot_path
 
 
+def plot_experiment_comparison(experiments: list, output_dir: str):
+    """
+    Compare multiple training runs on the same chart.
+
+    experiments: list of dicts:
+        {"label": "temp=0.05", "history": [...], "color": "#e74c3c"}
+
+    Produces two plots:
+        Left:  val loss across experiments
+        Right: val accuracy across experiments
+    """
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
+    fig.suptitle("Experiment Comparison", fontsize=14, fontweight="bold")
+
+    for exp in experiments:
+        history = exp["history"]
+        label   = exp["label"]
+        color   = exp["color"]
+        epochs  = list(range(1, len(history) + 1))
+
+        has_val = "val_loss" in history[0]
+
+        if has_val:
+            val_loss = [h["val_loss"]     for h in history]
+            val_acc  = [h["val_accuracy"] * 100 for h in history]
+            ax1.plot(epochs, val_loss, color=color, linewidth=2,
+                     marker="o", markersize=4, label=label)
+            ax2.plot(epochs, val_acc,  color=color, linewidth=2,
+                     marker="o", markersize=4, label=f"{label} (best: {max(val_acc):.1f}%)")
+        else:
+            # fallback to train metrics if val not available
+            train_loss = [h["loss"]     for h in history]
+            train_acc  = [h["accuracy"] * 100 for h in history]
+            ax1.plot(epochs, train_loss, color=color, linewidth=2,
+                     marker="o", markersize=4, label=label, linestyle="--")
+            ax2.plot(epochs, train_acc,  color=color, linewidth=2,
+                     marker="o", markersize=4, label=label, linestyle="--")
+
+    ax1.set_title("Validation Loss", fontsize=12)
+    ax1.set_xlabel("Epoch")
+    ax1.set_ylabel("Cross-Entropy Loss")
+    ax1.legend(fontsize=9)
+    ax1.grid(True, alpha=0.3)
+
+    ax2.axhline(y=95, color="gray", linestyle="--", alpha=0.4, label="95% reference")
+    ax2.set_title("Validation Accuracy", fontsize=12)
+    ax2.set_xlabel("Epoch")
+    ax2.set_ylabel("Accuracy (%)")
+    ax2.set_ylim(0, 108)
+    ax2.legend(fontsize=9)
+    ax2.grid(True, alpha=0.3)
+
+    plt.tight_layout()
+    plot_path = os.path.join(output_dir, "experiment_comparison.png")
+    plt.savefig(plot_path, dpi=150, bbox_inches="tight")
+    plt.close()
+
+    print(f"  Comparison plot → {plot_path}")
+    return plot_path
+
+
+# ── Main Train Function ────────────────────────────────────────────────────────
+
 def train(args) -> tuple:
     """
-    Full training pipeline:
-        1. Load dataset
-        2. Build tokenizer
+    Full training pipeline with validation tracking.
+
+    Steps:
+        1. Load dataset (train + val + test)
+        2. Build tokenizer on train data
         3. Build model
-        4. Create training pairs + custom batch sampler
-        5. Train for N epochs
-        6. Save model + tokenizer + config
-    
-    Returns:
-        model, tokenizer, output_dir
+        4. Create training pairs + IntentAwareBatchSampler
+        5. Train N epochs — evaluate on val set each epoch
+        6. Save model, tokenizer, config, plots
     """
-    # fix all random seeds for reproducibility
-    # same seed = same results every run
+
     random.seed(args.seed)
     torch.manual_seed(args.seed)
 
-    # use GPU if available, otherwise CPU
-    # for this small model CPU is fast enough (~0.3s per epoch)
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"  Device: {device}")
 
     # ── Step 1: Load data ──────────────────────────────────────
     train_data, val_data, test_data = load_dataset()
 
-    # override batch size to match actual number of intents loaded
-    # this guarantees one pair per intent per batch → zero false negatives
-    # works for both 20 intents (synthetic) and 150 intents (CLINC)
+    # auto-set batch size to n_intents for zero false negatives
     n_intents = len(train_data)
     if args.batch_size != n_intents:
         print(f"\n  Adjusting batch size: {args.batch_size} → {n_intents} (= n_intents)")
@@ -401,15 +528,7 @@ def train(args) -> tuple:
 
     # ── Step 2: Build tokenizer ────────────────────────────────
     print("\nBuilding tokenizer...")
-
-    # flatten all training texts into one list for fitting
-    # e.g. [q for intent 0] + [q for intent 1] + ... = 3000 texts
-    all_texts = [
-        text
-        for queries in train_data.values()
-        for text in queries
-    ]
-
+    all_texts = [text for queries in train_data.values() for text in queries]
     tokenizer = SimpleTokenizer(max_vocab_size=8000, max_seq_len=32)
     tokenizer.fit(all_texts)
     print(f"  Vocab size: {tokenizer.vocab_size}")
@@ -428,13 +547,7 @@ def train(args) -> tuple:
         seed=args.seed,
     )
 
-    # custom sampler → one pair per intent per batch
-    # → zero false negatives guaranteed
-    sampler = IntentAwareBatchSampler(
-        intent_ids,
-        batch_size=args.batch_size,
-    )
-
+    sampler    = IntentAwareBatchSampler(intent_ids, batch_size=args.batch_size)
     dataset    = PairDataset(pairs)
     dataloader = DataLoader(
         dataset,
@@ -446,50 +559,47 @@ def train(args) -> tuple:
     print(f"  Batches/epoch : {len(sampler)}")
 
     # ── Step 5: Optimizer + scheduler + loss ───────────────────
-    # AdamW = Adam with weight decay
-    # weight decay = small penalty on large weights → prevents overfitting
-    optimizer = torch.optim.AdamW(
-        model.parameters(),
-        lr=args.lr,
-        weight_decay=0.01,
-    )
-
-    # total steps = batches per epoch × number of epochs
-    # e.g. 20 batches × 15 epochs = 300 total steps
+    optimizer   = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=0.01)
     total_steps = len(sampler) * args.epochs
     scheduler   = make_scheduler(optimizer, args.warmup_steps, total_steps)
     loss_fn     = MultipleNegativesRankingLoss(temperature=args.temperature)
 
     # ── Step 6: Training loop ──────────────────────────────────
     print(f"\nTraining for {args.epochs} epochs...")
+    print(f"  {'Epoch':>5} | {'train_loss':>10} | {'train_acc':>9} | "
+          f"{'val_loss':>8} | {'val_acc':>7} | {'time':>6}")
+    print("  " + "─" * 65)
+
     history = []
 
     for epoch in range(1, args.epochs + 1):
         metrics = train_one_epoch(
-            model,
-            dataloader,
-            optimizer,
-            scheduler,
-            loss_fn,
-            device,
-            epoch,
+            model, dataloader, optimizer, scheduler,
+            loss_fn, device, epoch,
+            val_data=val_data,
+            tokenizer=tokenizer,
         )
-        # store loss and accuracy for each epoch
         history.append(metrics)
+
+    # print overfitting summary
+    if "val_loss" in history[-1]:
+        final_gap = history[-1]["val_loss"] - history[-1]["loss"]
+        best_val  = max(h["val_accuracy"] for h in history) * 100
+        best_epoch = max(range(len(history)), key=lambda i: history[i]["val_accuracy"]) + 1
+        print(f"\n  Best val accuracy : {best_val:.1f}% at epoch {best_epoch}")
+        print(f"  Final loss gap    : {final_gap:.4f} "
+              f"({'⚠ overfitting' if final_gap > 0.5 else 'healthy'})")
 
     # ── Step 7: Save artifacts ─────────────────────────────────
     os.makedirs(args.output_dir, exist_ok=True)
 
-    # save model weights — state_dict contains all learned parameters
-    model_path = os.path.join(args.output_dir, "model.pt")
-    torch.save(model.state_dict(), model_path)
+    model_path  = os.path.join(args.output_dir, "model.pt")
+    tok_path    = os.path.join(args.output_dir, "tokenizer.json")
+    config_path = os.path.join(args.output_dir, "config.json")
 
-    # save tokenizer vocabulary — needed at inference time
-    tok_path = os.path.join(args.output_dir, "tokenizer.json")
+    torch.save(model.state_dict(), model_path)
     tokenizer.save(tok_path)
 
-    # save training config + loss/accuracy history
-    config_path = os.path.join(args.output_dir, "config.json")
     with open(config_path, "w") as f:
         json.dump({
             "epochs":           args.epochs,
@@ -501,8 +611,9 @@ def train(args) -> tuple:
             "history":          history,
         }, f, indent=2)
 
-    # generate and save training charts
-    plot_training_history(history, args.output_dir)
+    # generate plots
+    label = getattr(args, "experiment_label", "")
+    plot_training_history(history, args.output_dir, label=label)
 
     print(f"\n  Model     → {model_path}")
     print(f"  Tokenizer → {tok_path}")
@@ -511,39 +622,114 @@ def train(args) -> tuple:
     return model, tokenizer, args.output_dir
 
 
+# ── Experiment Runner ──────────────────────────────────────────────────────────
+
+def run_experiments(base_args, results_dir: str):
+    """
+    Run multiple training experiments with different configs and compare them.
+
+    Experiments:
+        1. temperature=0.01  — very sharp signal, very hard negatives
+        2. temperature=0.05  — default, sharp signal
+        3. temperature=0.20  — soft signal, easier negatives
+
+    Why temperature is interesting:
+        - Low temp  → loss is very sensitive to any confusion → fast but risky
+        - High temp → loss is forgiving → slower but more stable
+        - Finding the sweet spot matters for generalisation
+
+    Saves individual plots per experiment + one comparison plot.
+    """
+
+    experiments_config = [
+        {"label": "temp=0.01", "temperature": 0.01, "color": "#e74c3c"},
+        {"label": "temp=0.05", "temperature": 0.05, "color": "#3498db"},
+        {"label": "temp=0.20", "temperature": 0.20, "color": "#2ecc71"},
+    ]
+
+    os.makedirs(results_dir, exist_ok=True)
+    all_experiments = []
+
+    for config in experiments_config:
+        print(f"\n{'='*65}")
+        print(f"  EXPERIMENT: {config['label']}")
+        print(f"{'='*65}")
+
+        # copy base args and override temperature + output dir
+        import copy
+        exp_args = copy.deepcopy(base_args)
+        exp_args.temperature      = config["temperature"]
+        exp_args.experiment_label = config["label"]
+        exp_args.output_dir       = os.path.join(results_dir, config["label"].replace("=", "_"))
+
+        _, _, _ = train(exp_args)
+
+        # load history from saved config
+        config_path = os.path.join(exp_args.output_dir, "config.json")
+        with open(config_path) as f:
+            saved = json.load(f)
+
+        all_experiments.append({
+            "label":   config["label"],
+            "history": saved["history"],
+            "color":   config["color"],
+        })
+
+    # generate comparison plot
+    plot_experiment_comparison(all_experiments, results_dir)
+
+    # print summary table
+    print(f"\n{'='*65}")
+    print("  EXPERIMENT SUMMARY")
+    print(f"{'='*65}")
+    print(f"  {'Experiment':<15} | {'Best Val Acc':>12} | {'Best Epoch':>10} | {'Final Val Loss':>14}")
+    print("  " + "─" * 58)
+
+    for exp in all_experiments:
+        history   = exp["history"]
+        has_val   = "val_loss" in history[0]
+        if has_val:
+            best_acc   = max(h["val_accuracy"] for h in history) * 100
+            best_epoch = max(range(len(history)), key=lambda i: history[i]["val_accuracy"]) + 1
+            final_loss = history[-1]["val_loss"]
+        else:
+            best_acc   = max(h["accuracy"] for h in history) * 100
+            best_epoch = max(range(len(history)), key=lambda i: history[i]["accuracy"]) + 1
+            final_loss = history[-1]["loss"]
+        print(f"  {exp['label']:<15} | {best_acc:>11.1f}% | {best_epoch:>10} | {final_loss:>14.4f}")
+
+    # save summary to file
+    summary_path = os.path.join(results_dir, "experiment_summary.json")
+    with open(summary_path, "w") as f:
+        json.dump(all_experiments, f, indent=2)
+
+    print(f"\n  Summary → {summary_path}")
+    return all_experiments
+
+
+# ── Entry Point ────────────────────────────────────────────────────────────────
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train MiniIntentEmbedder")
 
-    # number of full passes through the training data
-    # more epochs = more learning but risk of overfitting
     parser.add_argument("--epochs",           type=int,   default=15)
-
-    # number of pairs per batch
-    # automatically overridden to match n_intents after data is loaded
-    # so zero false negatives are always guaranteed regardless of dataset
-    parser.add_argument("--batch-size",       type=int,   default=20)
-
-    # how many training pairs to create per intent
-    # 20 intents × 20 pairs = 400 total pairs
+    parser.add_argument("--batch-size",       type=int,   default=20,
+                        help="Auto-overridden to n_intents after data load")
     parser.add_argument("--pairs-per-intent", type=int,   default=20)
-
-    # learning rate — how big each weight update step is
-    # 3e-4 is a good default for AdamW on small models
     parser.add_argument("--lr",               type=float, default=3e-4)
-
-    # temperature for contrastive loss
-    # 0.05 = sharp, hard training signal
     parser.add_argument("--temperature",      type=float, default=0.05)
-
-    # number of warmup steps before full lr is applied
-    # 50 steps = ~2-3 epochs of warmup
     parser.add_argument("--warmup-steps",     type=int,   default=50)
-
-    # where to save model, tokenizer, config
     parser.add_argument("--output-dir",       type=str,   default="../models/finetuned")
-
-    # random seed for reproducibility
+    parser.add_argument("--results-dir",      type=str,   default="../results")
     parser.add_argument("--seed",             type=int,   default=42)
+    parser.add_argument("--experiments",      action="store_true",
+                        help="Run temperature comparison experiments")
 
     args = parser.parse_args()
-    train(args)
+
+    if args.experiments:
+        # run all temperature experiments and compare
+        run_experiments(args, args.results_dir)
+    else:
+        # single training run
+        train(args)

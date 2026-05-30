@@ -1,4 +1,3 @@
-Matplotlib is building the font cache; this may take a moment.
 /Users/subha/Library/Python/3.9/lib/python/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
   warnings.warn(
   Device: cpu
@@ -24,21 +23,41 @@ Creating training pairs...
   Batches/epoch : 20
 
 Training for 15 epochs...
-  Epoch 01 | loss 5.0790 | acc 2.5% | time 2.2s
-  Epoch 02 | loss 4.8561 | acc 4.0% | time 1.9s
-  Epoch 03 | loss 4.3312 | acc 9.8% | time 1.9s
-  Epoch 04 | loss 3.5551 | acc 19.6% | time 1.9s
-  Epoch 05 | loss 2.7912 | acc 31.6% | time 1.9s
-  Epoch 06 | loss 2.1563 | acc 44.4% | time 1.9s
-  Epoch 07 | loss 1.7581 | acc 52.8% | time 1.9s
-  Epoch 08 | loss 1.4027 | acc 61.5% | time 2.0s
-  Epoch 09 | loss 1.1746 | acc 66.2% | time 2.0s
-  Epoch 10 | loss 0.9890 | acc 71.7% | time 1.9s
-  Epoch 11 | loss 0.8765 | acc 73.7% | time 2.0s
-  Epoch 12 | loss 0.7475 | acc 77.8% | time 2.0s
-  Epoch 13 | loss 0.6737 | acc 80.4% | time 1.9s
-  Epoch 14 | loss 0.6302 | acc 81.9% | time 2.0s
-  Epoch 15 | loss 0.5819 | acc 83.2% | time 2.0s
+  Epoch | train_loss | train_acc | val_loss | val_acc |   time
+  ─────────────────────────────────────────────────────────────────
+  Created 1,500 training pairs across 150 intents
+  Epoch 01 | train_loss 5.0790 | train_acc 2.5% | val_loss 4.6387 | val_acc 14.2% | time 2.1s
+  Created 1,500 training pairs across 150 intents
+  Epoch 02 | train_loss 4.8361 | train_acc 3.7% | val_loss 4.3766 | val_acc 18.3% | time 2.0s
+  Created 1,500 training pairs across 150 intents
+  Epoch 03 | train_loss 4.3128 | train_acc 9.7% | val_loss 3.5904 | val_acc 24.5% | time 2.0s
+  Created 1,500 training pairs across 150 intents
+  Epoch 04 | train_loss 3.5034 | train_acc 20.4% | val_loss 2.9882 | val_acc 35.3% | time 2.0s
+  Created 1,500 training pairs across 150 intents
+  Epoch 05 | train_loss 2.7594 | train_acc 31.3% | val_loss 2.6358 | val_acc 42.6% | time 2.0s
+  Created 1,500 training pairs across 150 intents
+  Epoch 06 | train_loss 2.1484 | train_acc 43.9% | val_loss 2.4354 | val_acc 45.9% | time 2.0s
+  Created 1,500 training pairs across 150 intents
+  Epoch 07 | train_loss 1.7094 | train_acc 54.7% | val_loss 2.3354 | val_acc 49.5% | time 2.0s
+  Created 1,500 training pairs across 150 intents
+  Epoch 08 | train_loss 1.3704 | train_acc 61.6% | val_loss 2.2474 | val_acc 52.9% | time 2.0s
+  Created 1,500 training pairs across 150 intents
+  Epoch 09 | train_loss 1.1431 | train_acc 67.5% | val_loss 2.1625 | val_acc 54.8% | time 2.0s ⚠ overfit?
+  Created 1,500 training pairs across 150 intents
+  Epoch 10 | train_loss 0.9529 | train_acc 73.2% | val_loss 2.1346 | val_acc 55.3% | time 2.0s ⚠ overfit?
+  Created 1,500 training pairs across 150 intents
+  Epoch 11 | train_loss 0.8249 | train_acc 76.5% | val_loss 2.0918 | val_acc 56.7% | time 2.0s ⚠ overfit?
+  Created 1,500 training pairs across 150 intents
+  Epoch 12 | train_loss 0.6991 | train_acc 80.3% | val_loss 2.0630 | val_acc 58.0% | time 2.0s ⚠ overfit?
+  Created 1,500 training pairs across 150 intents
+  Epoch 13 | train_loss 0.6557 | train_acc 81.2% | val_loss 2.0522 | val_acc 58.7% | time 2.0s ⚠ overfit?
+  Created 1,500 training pairs across 150 intents
+  Epoch 14 | train_loss 0.6040 | train_acc 83.2% | val_loss 2.0423 | val_acc 59.5% | time 2.0s ⚠ overfit?
+  Created 1,500 training pairs across 150 intents
+  Epoch 15 | train_loss 0.5520 | train_acc 85.5% | val_loss 2.0408 | val_acc 59.4% | time 2.0s ⚠ overfit?
+
+  Best val accuracy : 59.5% at epoch 14
+  Final loss gap    : 1.4888 (⚠ overfitting)
   Plot      → ../models/finetuned/training_curves.png
 
   Model     → ../models/finetuned/model.pt

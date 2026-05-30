@@ -1,0 +1,215 @@
+/Users/subha/Library/Python/3.9/lib/python/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+
+=================================================================
+  EXPERIMENT: temp=0.01
+=================================================================
+  Device: cpu
+Loading e-commerce intent dataset...
+  Trying HuggingFace Hub...
+  Source  : HuggingFace Hub (clinc/clinc_oos)
+  Intents : 150
+  Train   : 7,500 queries
+  Val     : 3,000 queries
+  Test    : 4,500 queries
+
+  Adjusting batch size: 20 → 150 (= n_intents)
+
+Building tokenizer...
+  Vocab size: 3689
+
+Building model...
+  Parameters: 872,576
+
+Creating training pairs...
+  Created 3,000 training pairs across 150 intents
+  Pairs         : 3,000
+  Batches/epoch : 20
+
+Training for 15 epochs...
+  Epoch | train_loss | train_acc | val_loss | val_acc |   time
+  ─────────────────────────────────────────────────────────────────
+  Created 1,500 training pairs across 150 intents
+  Epoch 01 | train_loss 9.2805 | train_acc 2.1% | val_loss 4.7259 | val_acc 14.5% | time 2.0s
+  Created 1,500 training pairs across 150 intents
+  Epoch 02 | train_loss 5.5663 | train_acc 2.4% | val_loss 4.5883 | val_acc 19.3% | time 2.0s
+  Created 1,500 training pairs across 150 intents
+  Epoch 03 | train_loss 4.7995 | train_acc 4.4% | val_loss 4.0151 | val_acc 21.9% | time 2.0s
+  Created 1,500 training pairs across 150 intents
+  Epoch 04 | train_loss 4.1531 | train_acc 11.6% | val_loss 3.2605 | val_acc 30.4% | time 2.0s
+  Created 1,500 training pairs across 150 intents
+  Epoch 05 | train_loss 3.3605 | train_acc 21.7% | val_loss 2.7200 | val_acc 38.6% | time 2.0s
+  Created 1,500 training pairs across 150 intents
+  Epoch 06 | train_loss 2.5916 | train_acc 35.6% | val_loss 2.4580 | val_acc 45.0% | time 2.0s
+  Created 1,500 training pairs across 150 intents
+  Epoch 07 | train_loss 2.0333 | train_acc 45.9% | val_loss 2.3698 | val_acc 49.3% | time 2.0s
+  Created 1,500 training pairs across 150 intents
+  Epoch 08 | train_loss 1.6117 | train_acc 55.3% | val_loss 2.3609 | val_acc 52.3% | time 2.0s
+  Created 1,500 training pairs across 150 intents
+  Epoch 09 | train_loss 1.3261 | train_acc 61.7% | val_loss 2.3798 | val_acc 54.8% | time 2.0s ⚠ overfit?
+  Created 1,500 training pairs across 150 intents
+  Epoch 10 | train_loss 1.1161 | train_acc 67.2% | val_loss 2.4715 | val_acc 55.6% | time 2.0s ⚠ overfit?
+  Created 1,500 training pairs across 150 intents
+  Epoch 11 | train_loss 0.9487 | train_acc 71.3% | val_loss 2.4668 | val_acc 56.4% | time 2.0s ⚠ overfit?
+  Created 1,500 training pairs across 150 intents
+  Epoch 12 | train_loss 0.8004 | train_acc 75.9% | val_loss 2.5379 | val_acc 57.1% | time 2.0s ⚠ overfit?
+  Created 1,500 training pairs across 150 intents
+  Epoch 13 | train_loss 0.7292 | train_acc 77.5% | val_loss 2.5961 | val_acc 57.9% | time 1.9s ⚠ overfit?
+  Created 1,500 training pairs across 150 intents
+  Epoch 14 | train_loss 0.6845 | train_acc 79.1% | val_loss 2.6079 | val_acc 58.7% | time 1.9s ⚠ overfit?
+  Created 1,500 training pairs across 150 intents
+  Epoch 15 | train_loss 0.6019 | train_acc 81.0% | val_loss 2.6450 | val_acc 58.9% | time 2.0s ⚠ overfit?
+
+  Best val accuracy : 58.9% at epoch 15
+  Final loss gap    : 2.0431 (⚠ overfitting)
+  Plot      → ../results/temp_0.01/training_curves_temp=0.01.png
+
+  Model     → ../results/temp_0.01/model.pt
+  Tokenizer → ../results/temp_0.01/tokenizer.json
+  Config    → ../results/temp_0.01/config.json
+
+=================================================================
+  EXPERIMENT: temp=0.05
+=================================================================
+  Device: cpu
+Loading e-commerce intent dataset...
+  Trying HuggingFace Hub...
+  Source  : HuggingFace Hub (clinc/clinc_oos)
+  Intents : 150
+  Train   : 7,500 queries
+  Val     : 3,000 queries
+  Test    : 4,500 queries
+
+  Adjusting batch size: 20 → 150 (= n_intents)
+
+Building tokenizer...
+  Vocab size: 3689
+
+Building model...
+  Parameters: 872,576
+
+Creating training pairs...
+  Created 3,000 training pairs across 150 intents
+  Pairs         : 3,000
+  Batches/epoch : 20
+
+Training for 15 epochs...
+  Epoch | train_loss | train_acc | val_loss | val_acc |   time
+  ─────────────────────────────────────────────────────────────────
+  Created 1,500 training pairs across 150 intents
+  Epoch 01 | train_loss 5.0790 | train_acc 2.5% | val_loss 4.6387 | val_acc 14.2% | time 2.0s
+  Created 1,500 training pairs across 150 intents
+  Epoch 02 | train_loss 4.8361 | train_acc 3.7% | val_loss 4.3766 | val_acc 18.3% | time 2.0s
+  Created 1,500 training pairs across 150 intents
+  Epoch 03 | train_loss 4.3128 | train_acc 9.7% | val_loss 3.5904 | val_acc 24.5% | time 2.0s
+  Created 1,500 training pairs across 150 intents
+  Epoch 04 | train_loss 3.5034 | train_acc 20.4% | val_loss 2.9882 | val_acc 35.3% | time 2.0s
+  Created 1,500 training pairs across 150 intents
+  Epoch 05 | train_loss 2.7594 | train_acc 31.3% | val_loss 2.6358 | val_acc 42.6% | time 2.0s
+  Created 1,500 training pairs across 150 intents
+  Epoch 06 | train_loss 2.1484 | train_acc 43.9% | val_loss 2.4354 | val_acc 45.9% | time 2.0s
+  Created 1,500 training pairs across 150 intents
+  Epoch 07 | train_loss 1.7094 | train_acc 54.7% | val_loss 2.3354 | val_acc 49.5% | time 2.0s
+  Created 1,500 training pairs across 150 intents
+  Epoch 08 | train_loss 1.3704 | train_acc 61.6% | val_loss 2.2474 | val_acc 52.9% | time 2.0s
+  Created 1,500 training pairs across 150 intents
+  Epoch 09 | train_loss 1.1431 | train_acc 67.5% | val_loss 2.1625 | val_acc 54.8% | time 2.0s ⚠ overfit?
+  Created 1,500 training pairs across 150 intents
+  Epoch 10 | train_loss 0.9529 | train_acc 73.2% | val_loss 2.1346 | val_acc 55.3% | time 2.0s ⚠ overfit?
+  Created 1,500 training pairs across 150 intents
+  Epoch 11 | train_loss 0.8249 | train_acc 76.5% | val_loss 2.0918 | val_acc 56.7% | time 2.0s ⚠ overfit?
+  Created 1,500 training pairs across 150 intents
+  Epoch 12 | train_loss 0.6991 | train_acc 80.3% | val_loss 2.0630 | val_acc 58.0% | time 2.0s ⚠ overfit?
+  Created 1,500 training pairs across 150 intents
+  Epoch 13 | train_loss 0.6557 | train_acc 81.2% | val_loss 2.0522 | val_acc 58.7% | time 2.0s ⚠ overfit?
+  Created 1,500 training pairs across 150 intents
+  Epoch 14 | train_loss 0.6040 | train_acc 83.2% | val_loss 2.0423 | val_acc 59.5% | time 2.0s ⚠ overfit?
+  Created 1,500 training pairs across 150 intents
+  Epoch 15 | train_loss 0.5520 | train_acc 85.5% | val_loss 2.0408 | val_acc 59.4% | time 2.0s ⚠ overfit?
+
+  Best val accuracy : 59.5% at epoch 14
+  Final loss gap    : 1.4888 (⚠ overfitting)
+  Plot      → ../results/temp_0.05/training_curves_temp=0.05.png
+
+  Model     → ../results/temp_0.05/model.pt
+  Tokenizer → ../results/temp_0.05/tokenizer.json
+  Config    → ../results/temp_0.05/config.json
+
+=================================================================
+  EXPERIMENT: temp=0.20
+=================================================================
+  Device: cpu
+Loading e-commerce intent dataset...
+  Trying HuggingFace Hub...
+  Source  : HuggingFace Hub (clinc/clinc_oos)
+  Intents : 150
+  Train   : 7,500 queries
+  Val     : 3,000 queries
+  Test    : 4,500 queries
+
+  Adjusting batch size: 20 → 150 (= n_intents)
+
+Building tokenizer...
+  Vocab size: 3689
+
+Building model...
+  Parameters: 872,576
+
+Creating training pairs...
+  Created 3,000 training pairs across 150 intents
+  Pairs         : 3,000
+  Batches/epoch : 20
+
+Training for 15 epochs...
+  Epoch | train_loss | train_acc | val_loss | val_acc |   time
+  ─────────────────────────────────────────────────────────────────
+  Created 1,500 training pairs across 150 intents
+  Epoch 01 | train_loss 4.9441 | train_acc 2.7% | val_loss 4.7854 | val_acc 13.9% | time 2.0s
+  Created 1,500 training pairs across 150 intents
+  Epoch 02 | train_loss 4.8082 | train_acc 4.7% | val_loss 4.3533 | val_acc 17.9% | time 2.0s
+  Created 1,500 training pairs across 150 intents
+  Epoch 03 | train_loss 4.3703 | train_acc 10.2% | val_loss 3.8034 | val_acc 23.7% | time 2.0s
+  Created 1,500 training pairs across 150 intents
+  Epoch 04 | train_loss 3.8508 | train_acc 18.0% | val_loss 3.4433 | val_acc 31.3% | time 2.0s
+  Created 1,500 training pairs across 150 intents
+  Epoch 05 | train_loss 3.4223 | train_acc 26.4% | val_loss 3.1603 | val_acc 36.9% | time 2.0s
+  Created 1,500 training pairs across 150 intents
+  Epoch 06 | train_loss 3.0731 | train_acc 38.0% | val_loss 2.9769 | val_acc 41.1% | time 2.0s
+  Created 1,500 training pairs across 150 intents
+  Epoch 07 | train_loss 2.8211 | train_acc 47.4% | val_loss 2.8437 | val_acc 45.5% | time 2.0s
+  Created 1,500 training pairs across 150 intents
+  Epoch 08 | train_loss 2.6180 | train_acc 52.6% | val_loss 2.7268 | val_acc 48.6% | time 2.0s
+  Created 1,500 training pairs across 150 intents
+  Epoch 09 | train_loss 2.4848 | train_acc 58.8% | val_loss 2.6445 | val_acc 50.2% | time 2.0s
+  Created 1,500 training pairs across 150 intents
+  Epoch 10 | train_loss 2.3666 | train_acc 63.2% | val_loss 2.5781 | val_acc 52.7% | time 2.0s
+  Created 1,500 training pairs across 150 intents
+  Epoch 11 | train_loss 2.2800 | train_acc 66.9% | val_loss 2.5285 | val_acc 54.1% | time 2.0s
+  Created 1,500 training pairs across 150 intents
+  Epoch 12 | train_loss 2.2170 | train_acc 70.8% | val_loss 2.4880 | val_acc 55.0% | time 2.0s
+  Created 1,500 training pairs across 150 intents
+  Epoch 13 | train_loss 2.1729 | train_acc 71.8% | val_loss 2.4635 | val_acc 56.1% | time 2.0s
+  Created 1,500 training pairs across 150 intents
+  Epoch 14 | train_loss 2.1322 | train_acc 73.5% | val_loss 2.4411 | val_acc 56.6% | time 1.9s
+  Created 1,500 training pairs across 150 intents
+  Epoch 15 | train_loss 2.1011 | train_acc 76.5% | val_loss 2.4293 | val_acc 57.1% | time 2.0s
+
+  Best val accuracy : 57.1% at epoch 15
+  Final loss gap    : 0.3282 (healthy)
+  Plot      → ../results/temp_0.20/training_curves_temp=0.20.png
+
+  Model     → ../results/temp_0.20/model.pt
+  Tokenizer → ../results/temp_0.20/tokenizer.json
+  Config    → ../results/temp_0.20/config.json
+  Comparison plot → ../results/experiment_comparison.png
+
+=================================================================
+  EXPERIMENT SUMMARY
+=================================================================
+  Experiment      | Best Val Acc | Best Epoch | Final Val Loss
+  ──────────────────────────────────────────────────────────
+  temp=0.01       |        58.9% |         15 |         2.6450
+  temp=0.05       |        59.5% |         14 |         2.0408
+  temp=0.20       |        57.1% |         15 |         2.4293
+
+  Summary → ../results/experiment_summary.json

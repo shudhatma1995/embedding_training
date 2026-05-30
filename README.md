@@ -23,6 +23,9 @@ This repo is built **step by step**. You can clone it, follow each step in order
 - [Step 4 — MiniIntentEmbedder](#step-4--miniintentembedder)
 - [Step 5 — Data Preparation](#step-5--data-preparation)
 - [Step 6 — Training](#step-6--training)
+  - [Overfitting tracking](#overfitting-tracking)
+  - [Temperature experiments](#temperature-experiments)
+  - [Key findings](#key-findings)
 - [Dependencies](#dependencies)
 
 ---
@@ -1194,11 +1197,104 @@ model.load_state_dict(torch.load("../models/finetuned/model.pt"))
 | Argument | Default | Why |
 |---|---|---|
 | `--epochs` | 15 | Enough for loss to converge on 400 pairs |
-| `--batch-size` | 20 | Matches number of intents → zero false negatives |
+| `--batch-size` | 20 | Auto-overridden to n_intents after data load |
 | `--pairs-per-intent` | 20 | 20 × 20 = 400 total pairs |
 | `--lr` | 3e-4 | Good default for AdamW on small models |
 | `--temperature` | 0.05 | Sharp contrastive signal |
 | `--warmup-steps` | 50 | ~2-3 epochs of warmup |
+
+---
+
+#### Overfitting tracking
+
+Every epoch the model is evaluated on the **validation set** — queries never seen during training. This reveals whether the model is learning general intent meaning or just memorising training pairs.
+
+**What overfitting looks like:**
+
+```
+Epoch 07 | train_loss 1.71 | train_acc 54.7% | val_loss 2.34 | val_acc 49.5%
+Epoch 10 | train_loss 0.95 | train_acc 73.2% | val_loss 2.13 | val_acc 55.3% ⚠ overfit?
+Epoch 15 | train_loss 0.55 | train_acc 85.5% | val_loss 2.04 | val_acc 59.4% ⚠ overfit?
+```
+
+Train loss keeps dropping → model is still learning.
+Val loss plateaus from epoch 9 → model starts memorising training pairs.
+The gap (`val_loss − train_loss`) grows — this is the **overfitting signal**.
+
+**Overfitting gap thresholds:**
+
+| Gap | Status | Colour in plot |
+|---|---|---|
+| < 0.2 | Healthy — generalising well | 🟢 Green |
+| 0.2 – 0.5 | Warning — watch carefully | 🟡 Yellow |
+| > 0.5 | Overfitting — val loss diverging | 🔴 Red |
+
+**Training plots** (`models/finetuned/training_curves.png`) show four panels:
+- Top-left: Train vs val loss — gap visible as shaded region
+- Top-right: Train vs val accuracy — best val epoch marked
+- Bottom-left: Overfitting gap bar chart per epoch — coloured by severity
+- Bottom-right: Val accuracy trend with best epoch highlighted
+
+---
+
+#### Temperature experiments
+
+Run all three temperature experiments at once:
+
+```bash
+cd customer_intent_search
+python3 train.py --experiments
+```
+
+This trains three models with different temperature values and saves a comparison plot to `results/experiment_comparison.png`.
+
+**What temperature controls:**
+
+Temperature τ scales similarity scores before the softmax in the loss function:
+
+```
+low  τ = 0.01 → scores very peaked → model punished harshly for any confusion
+mid  τ = 0.05 → scores sharp       → strong but stable training signal (default)
+high τ = 0.20 → scores flat        → model punished gently → slower but more stable
+```
+
+**Actual results from running the experiments:**
+
+| Experiment | Best Val Acc | Best Epoch | Final Val Loss | Overfitting |
+|---|---|---|---|---|
+| temp=0.01 | 58.9% | epoch 15 | 2.6450 | ⚠ severe (gap=2.04) |
+| temp=0.05 | **59.5%** | epoch 14 | 2.0408 | ⚠ moderate (gap=1.49) |
+| temp=0.20 | 57.1% | epoch 15 | 2.4293 | ✓ healthy (gap=0.33) |
+
+---
+
+#### Key findings
+
+**Finding 1 — Temperature sweet spot is τ=0.05**
+
+`temp=0.05` achieves the best validation accuracy (59.5%) while maintaining a manageable overfitting gap. Very low temperature (`0.01`) produces a harsh signal that memorises training pairs faster — large overfitting gap. High temperature (`0.20`) is stable but converges slower — never reaches the same val accuracy within 15 epochs.
+
+**Finding 2 — Overfitting starts at epoch 9**
+
+Across all experiments, the overfitting flag appears around epoch 8-9. This is when the train-val gap crosses 1.0. The model has learned the general structure of intents by epoch 8 — after that it's memorising specific phrasings from the training pairs.
+
+**Finding 3 — Val accuracy still improving despite overfitting flag**
+
+Interestingly, val accuracy continues to improve even after the overfitting flag appears (epoch 9 → 59.5% at epoch 14). This happens because:
+- The loss gap measures raw loss values (sensitive to scale)
+- Val accuracy measures retrieval ranking (more robust)
+- Even a slightly overfit model can still rank the correct intent highest
+
+This suggests the `> 0.5 gap` threshold for our overfitting flag is conservative. A better early stopping criterion would be: stop when val accuracy has not improved for 3 consecutive epochs.
+
+**Finding 4 — 150 intents is a hard problem for this model**
+
+With 150 intents, the model achieves only ~59% val accuracy — far below the 99.7% seen in the original run. The original run used batch_size=20 with only 19 negatives per anchor — much easier. With 149 negatives per anchor, the model needs more training data and more epochs to converge. This is a known scaling challenge for small contrastive models.
+
+**What to try next to improve:**
+- More pairs per intent: `--pairs-per-intent 40`
+- More epochs: `--epochs 30`
+- Larger model: increase `embed_dim` and `n_layers` in `MiniIntentConfig`
 
 ---
 
