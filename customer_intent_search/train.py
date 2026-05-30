@@ -436,56 +436,114 @@ def plot_training_history(history: list, output_dir: str, label: str = ""):
 
 def plot_experiment_comparison(experiments: list, output_dir: str):
     """
-    Compare multiple training runs on the same chart.
+    Compare multiple training runs on a rich 4-panel chart.
 
     experiments: list of dicts:
         {"label": "temp=0.05", "history": [...], "color": "#e74c3c"}
 
-    Produces two plots:
-        Left:  val loss across experiments
-        Right: val accuracy across experiments
+    Four panels:
+        Top-left:     Validation loss curves per experiment
+        Top-right:    Validation accuracy curves per experiment
+        Bottom-left:  Overfitting gap (val_loss - train_loss) per experiment
+        Bottom-right: Summary bar chart — best val accuracy per experiment
     """
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
-    fig.suptitle("Experiment Comparison", fontsize=14, fontweight="bold")
+    fig, axes = plt.subplots(2, 2, figsize=(16, 12))
+    fig.suptitle("Temperature Experiment Comparison — MiniIntentEmbedder",
+                 fontsize=14, fontweight="bold")
+    ax1, ax2 = axes[0]
+    ax3, ax4 = axes[1]
+
+    summary_labels = []
+    summary_best_accs = []
+    summary_colors = []
 
     for exp in experiments:
-        history = exp["history"]
-        label   = exp["label"]
-        color   = exp["color"]
-        epochs  = list(range(1, len(history) + 1))
+        history    = exp["history"]
+        label      = exp["label"]
+        color      = exp["color"]
+        epochs     = list(range(1, len(history) + 1))
+        has_val    = "val_loss" in history[0]
 
-        has_val = "val_loss" in history[0]
+        train_loss = [h["loss"]     for h in history]
 
         if has_val:
-            val_loss = [h["val_loss"]     for h in history]
-            val_acc  = [h["val_accuracy"] * 100 for h in history]
-            ax1.plot(epochs, val_loss, color=color, linewidth=2,
-                     marker="o", markersize=4, label=label)
-            ax2.plot(epochs, val_acc,  color=color, linewidth=2,
-                     marker="o", markersize=4, label=f"{label} (best: {max(val_acc):.1f}%)")
-        else:
-            # fallback to train metrics if val not available
-            train_loss = [h["loss"]     for h in history]
-            train_acc  = [h["accuracy"] * 100 for h in history]
-            ax1.plot(epochs, train_loss, color=color, linewidth=2,
-                     marker="o", markersize=4, label=label, linestyle="--")
-            ax2.plot(epochs, train_acc,  color=color, linewidth=2,
-                     marker="o", markersize=4, label=label, linestyle="--")
+            val_loss   = [h["val_loss"]     for h in history]
+            val_acc    = [h["val_accuracy"] * 100 for h in history]
+            gap        = [v - t for v, t in zip(val_loss, train_loss)]
+            best_acc   = max(val_acc)
+            best_epoch = val_acc.index(best_acc) + 1
 
-    ax1.set_title("Validation Loss", fontsize=12)
+            # panel 1: val loss
+            ax1.plot(epochs, val_loss, color=color, linewidth=2,
+                     marker="o", markersize=3, label=label)
+            ax1.annotate(f"{val_loss[-1]:.2f}",
+                         xy=(epochs[-1], val_loss[-1]),
+                         xytext=(4, 0), textcoords="offset points",
+                         fontsize=8, color=color)
+
+            # panel 2: val accuracy
+            ax2.plot(epochs, val_acc, color=color, linewidth=2,
+                     marker="o", markersize=3,
+                     label=f"{label}  (best {best_acc:.1f}% @ ep{best_epoch})")
+            # mark best epoch
+            ax2.scatter([best_epoch], [best_acc], color=color, s=80,
+                        zorder=5, edgecolors="white", linewidth=1.5)
+
+            # panel 3: overfitting gap
+            ax3.plot(epochs, gap, color=color, linewidth=2,
+                     marker="o", markersize=3, label=label)
+            ax3.annotate(f"{gap[-1]:.2f}",
+                         xy=(epochs[-1], gap[-1]),
+                         xytext=(4, 0), textcoords="offset points",
+                         fontsize=8, color=color)
+
+            # collect for summary bar chart
+            summary_labels.append(label)
+            summary_best_accs.append(best_acc)
+            summary_colors.append(color)
+
+    # ── panel 1: val loss ─────────────────────────────────────
+    ax1.set_title("Validation Loss per Experiment", fontsize=12)
     ax1.set_xlabel("Epoch")
     ax1.set_ylabel("Cross-Entropy Loss")
     ax1.legend(fontsize=9)
     ax1.grid(True, alpha=0.3)
 
+    # ── panel 2: val accuracy ─────────────────────────────────
     ax2.axhline(y=95, color="gray", linestyle="--", alpha=0.4, label="95% reference")
-    ax2.set_title("Validation Accuracy", fontsize=12)
+    ax2.set_title("Validation Accuracy per Experiment", fontsize=12)
     ax2.set_xlabel("Epoch")
     ax2.set_ylabel("Accuracy (%)")
     ax2.set_ylim(0, 108)
-    ax2.legend(fontsize=9)
+    ax2.legend(fontsize=8)
     ax2.grid(True, alpha=0.3)
+
+    # ── panel 3: overfitting gap ──────────────────────────────
+    ax3.axhline(y=0.5, color="#e74c3c", linestyle="--", alpha=0.5, label="Overfit threshold (0.5)")
+    ax3.axhline(y=0.2, color="#f39c12", linestyle="--", alpha=0.5, label="Warning threshold (0.2)")
+    ax3.axhline(y=0.0, color="black",   linewidth=0.8)
+    ax3.set_title("Overfitting Gap (val_loss − train_loss)", fontsize=12)
+    ax3.set_xlabel("Epoch")
+    ax3.set_ylabel("Loss Gap")
+    ax3.legend(fontsize=8)
+    ax3.grid(True, alpha=0.3, axis="y")
+
+    # ── panel 4: summary bar chart ────────────────────────────
+    bars = ax4.bar(summary_labels, summary_best_accs,
+                   color=summary_colors, alpha=0.8, edgecolor="white", linewidth=1.5)
+    # label each bar with its value
+    for bar, acc in zip(bars, summary_best_accs):
+        ax4.text(bar.get_x() + bar.get_width() / 2,
+                 bar.get_height() + 0.5,
+                 f"{acc:.1f}%",
+                 ha="center", va="bottom", fontsize=11, fontweight="bold")
+    ax4.axhline(y=95, color="gray", linestyle="--", alpha=0.4, label="95% reference")
+    ax4.set_title("Best Validation Accuracy per Experiment", fontsize=12)
+    ax4.set_ylabel("Best Val Accuracy (%)")
+    ax4.set_ylim(0, 80)
+    ax4.legend(fontsize=9)
+    ax4.grid(True, alpha=0.3, axis="y")
 
     plt.tight_layout()
     plot_path = os.path.join(output_dir, "experiment_comparison.png")
@@ -611,9 +669,11 @@ def train(args) -> tuple:
             "history":          history,
         }, f, indent=2)
 
-    # generate plots
-    label = getattr(args, "experiment_label", "")
-    plot_training_history(history, args.output_dir, label=label)
+    # generate plots — use plot_dir if set, otherwise same as output_dir
+    label    = getattr(args, "experiment_label", "")
+    plot_dir = getattr(args, "plot_dir", None) or args.output_dir
+    os.makedirs(plot_dir, exist_ok=True)
+    plot_training_history(history, plot_dir, label=label)
 
     print(f"\n  Model     → {model_path}")
     print(f"  Tokenizer → {tok_path}")
@@ -660,7 +720,15 @@ def run_experiments(base_args, results_dir: str):
         exp_args = copy.deepcopy(base_args)
         exp_args.temperature      = config["temperature"]
         exp_args.experiment_label = config["label"]
-        exp_args.output_dir       = os.path.join(results_dir, config["label"].replace("=", "_"))
+
+        # model artifacts (model.pt / tokenizer.json / config.json) → models/experiments/
+        # plots (training_curves_*.png)                              → results/experiments/
+        safe_label            = config["label"].replace("=", "_")
+        models_subdir         = os.path.join(
+            os.path.dirname(results_dir), "models", "experiments", safe_label
+        )
+        exp_args.output_dir   = models_subdir
+        exp_args.plot_dir     = os.path.join(results_dir, "experiments", safe_label)
 
         _, _, _ = train(exp_args)
 
@@ -675,8 +743,10 @@ def run_experiments(base_args, results_dir: str):
             "color":   config["color"],
         })
 
-    # generate comparison plot
-    plot_experiment_comparison(all_experiments, results_dir)
+    # generate comparison plot — saved at top of results_dir
+    plots_root = os.path.join(results_dir, "experiments")
+    os.makedirs(plots_root, exist_ok=True)
+    plot_experiment_comparison(all_experiments, plots_root)
 
     # print summary table
     print(f"\n{'='*65}")
@@ -699,7 +769,7 @@ def run_experiments(base_args, results_dir: str):
         print(f"  {exp['label']:<15} | {best_acc:>11.1f}% | {best_epoch:>10} | {final_loss:>14.4f}")
 
     # save summary to file
-    summary_path = os.path.join(results_dir, "experiment_summary.json")
+    summary_path = os.path.join(plots_root, "experiment_summary.json")
     with open(summary_path, "w") as f:
         json.dump(all_experiments, f, indent=2)
 

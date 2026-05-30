@@ -127,15 +127,32 @@ The model is trained using **contrastive learning** — queries with the same in
 
 ```
 embedding_training/
-├── customer_intent_search/       # Intent search package
-│   ├── data/                     # Saved tokenizer and datasets
-│   ├── tokenizer.py              # SimpleTokenizer implementation
-│   ├── model.py                  # Embedding model (config + attention)
-│   ├── synthetic_data.py         # Synthetic e-commerce intent dataset
-│   ├── data_preparation.py       # Dataset loading, training pairs, batch sampler
-│   └── train.py                  # Training loop, loss function, scheduler
-├── models/                       # Trained model checkpoints
-├── results/                      # Evaluation plots and metrics
+├── customer_intent_search/          # Intent search package
+│   ├── data/                        # Saved tokenizer and datasets
+│   ├── tokenizer.py                 # SimpleTokenizer implementation
+│   ├── model.py                     # Embedding model (config + attention)
+│   ├── synthetic_data.py            # Synthetic e-commerce intent dataset
+│   ├── data_preparation.py          # Dataset loading, training pairs, batch sampler
+│   └── train.py                     # Training loop, loss function, scheduler
+├── models/
+│   ├── finetuned/                   # Default single-run model artifacts
+│   │   ├── model.pt                 # Trained model weights
+│   │   ├── tokenizer.json           # Saved vocabulary
+│   │   ├── config.json              # Hyperparameters + training history
+│   │   └── training_curves.png      # Loss / accuracy plots
+│   └── experiments/                 # Per-experiment model artifacts
+│       ├── temp_0.01/               # model.pt + tokenizer.json + config.json
+│       ├── temp_0.05/
+│       └── temp_0.20/
+├── results/
+│   ├── training_run.log             # Output from last single training run
+│   ├── experiments_run.log          # Output from last experiments run
+│   └── experiments/                 # Per-experiment plots and summaries
+│       ├── temp_0.01/               # training_curves_temp=0.01.png
+│       ├── temp_0.05/               # training_curves_temp=0.05.png
+│       ├── temp_0.20/               # training_curves_temp=0.20.png
+│       ├── experiment_comparison.png # 4-panel cross-experiment chart
+│       └── experiment_summary.json  # Best metrics per experiment
 └── requirements.txt
 ```
 
@@ -1246,7 +1263,10 @@ cd customer_intent_search
 python3 train.py --experiments
 ```
 
-This trains three models with different temperature values and saves a comparison plot to `results/experiment_comparison.png`.
+This trains three models with different temperature values and saves:
+- Per-experiment model weights → `models/experiments/temp_X/`
+- Per-experiment training curves → `results/experiments/temp_X/`
+- Cross-experiment comparison chart → `results/experiments/experiment_comparison.png`
 
 **What temperature controls:**
 
