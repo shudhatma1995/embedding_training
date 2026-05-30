@@ -6,6 +6,27 @@ This repo is built **step by step**. You can clone it, follow each step in order
 
 ---
 
+## Table of Contents
+
+- [Problem Statement](#problem-statement)
+  - [The challenge](#the-challenge--understanding-what-a-customer-actually-wants)
+  - [Why traditional approaches fail](#why-traditional-approaches-fail)
+  - [The solution](#the-solution--embedding-based-retrieval)
+  - [What this project builds](#what-this-project-builds)
+- [Project Layout](#project-layout)
+- [End-to-end Pipeline](#end-to-end-pipeline)
+- [Setup](#setup)
+- [Follow Along](#follow-along)
+- [Step 1 — Tokenizer](#step-1--tokenizer)
+- [Step 2 — Model (embeddings + self-attention)](#step-2--model-embeddings--self-attention)
+- [Step 3 — TransformerBlock](#step-3--transformerblock)
+- [Step 4 — MiniIntentEmbedder](#step-4--miniintentembedder)
+- [Step 5 — Data Preparation](#step-5--data-preparation)
+- [Step 6 — Training](#step-6--training)
+- [Dependencies](#dependencies)
+
+---
+
 ## Problem Statement
 
 ### The challenge — understanding what a customer actually wants
