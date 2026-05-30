@@ -29,6 +29,11 @@ This repo is built **step by step**. You can clone it, follow each step in order
   - [Experiment results](#experiment-results)
   - [Comparison charts](#comparison-charts)
   - [Key findings](#key-findings)
+- [Step 7 — Evaluation](#step-7--evaluation)
+  - [What we are measuring and why](#what-we-are-measuring-and-why)
+  - [Three baselines to compare](#three-baselines-to-compare)
+  - [TF-IDF deep dive](#tf-idf-deep-dive)
+  - [Why the embedding model beats TF-IDF](#why-the-embedding-model-beats-tf-idf)
 - [Dependencies](#dependencies)
 
 ---
@@ -208,6 +213,7 @@ Work through the steps below in order. Each step introduces one component, with 
 | 4 | `MiniIntentEmbedder` — full model | Done |
 | 5 | Data preparation — dataset loading, training pairs, batch sampler | Done |
 | 6 | Training — contrastive loss, custom DataLoader, LR schedule | Done |
+| 7 | Evaluation — Recall@1/5, MRR, TF-IDF baseline comparison | In progress |
 
 ---
 
@@ -1393,6 +1399,240 @@ python3 train.py --pairs-per-intent 40 --epochs 30 --temperature 0.05
 ```
 
 Larger model capacity (`embed_dim=256`, `n_layers=4`) would also help if you want to go further.
+
+---
+
+---
+
+### Step 7 — Evaluation
+
+**Goal:** Measure how well the fine-tuned model actually works on unseen queries, and compare it against two baselines — a random-initialised model and TF-IDF — to quantify what training contributed.
+
+**Key file:** `customer_intent_search/evaluate.py`
+
+---
+
+#### What we are measuring and why
+
+During training we tracked **val accuracy** every epoch — but that was a training signal, not a real-world metric. It measured whether anchor_i matched positive_i inside the contrastive similarity matrix. That tells us the model is learning, not how well it retrieves intents.
+
+Real evaluation simulates the actual use case:
+
+```
+corpus  = one representative query per intent (150 entries)
+           → think of this as a catalogue of known intents
+
+queries = all remaining test queries (~4,200 entries)
+           → think of these as incoming customer messages
+
+for each test query:
+    embed it → find nearest corpus entry → did we get the right intent?
+```
+
+**Three metrics:**
+
+| Metric | Question it answers | Formula |
+|---|---|---|
+| **Recall@1** | Is the top-1 result the correct intent? | correct_top1 / total_queries |
+| **Recall@5** | Does the correct intent appear anywhere in the top 5? | correct_in_top5 / total_queries |
+| **MRR** | How high up is the correct result on average? | mean(1 / rank_of_correct) |
+
+**MRR example:**
+
+```
+query 1: correct intent ranked 1st  →  1/1 = 1.00
+query 2: correct intent ranked 3rd  →  1/3 = 0.33
+query 3: correct intent ranked 2nd  →  1/2 = 0.50
+
+MRR = (1.00 + 0.33 + 0.50) / 3 = 0.61
+```
+
+MRR rewards the model for getting close even when it doesn't get the exact top-1 right. A model with Recall@1 = 60% but MRR = 0.80 is still ranking the right answer very near the top — much better than a model with Recall@1 = 60% and MRR = 0.62.
+
+---
+
+#### Three baselines to compare
+
+| Model | What it tests | Expected result |
+|---|---|---|
+| **Random-init** | Same architecture, zero training — measures what the transformer gives you for free | Near-random (~1/150 = 0.7%) |
+| **TF-IDF** | Classic keyword overlap — the baseline every NLP model must beat | Moderate — works when queries share exact words with corpus |
+| **Fine-tuned** | Our trained model — what contrastive learning adds on top | Should clearly beat TF-IDF |
+
+If fine-tuned >> TF-IDF >> random-init, training worked as expected.
+If fine-tuned ≈ TF-IDF, the model learned nothing useful beyond word overlap.
+If TF-IDF > fine-tuned, something went wrong during training.
+
+---
+
+#### TF-IDF deep dive
+
+TF-IDF stands for **Term Frequency × Inverse Document Frequency**. Two ideas multiplied together. It represents text as a sparse vector of word importance scores — no training needed, purely based on word overlap.
+
+##### Part 1 — Term Frequency (TF)
+
+*How often does a word appear in this sentence?*
+
+```
+sentence: "I want to cancel my order please cancel it"
+
+word      count    TF = count / total_words
+──────────────────────────────────────────────
+cancel      2      2/9 = 0.22
+order       1      1/9 = 0.11
+I           1      1/9 = 0.11
+my          1      1/9 = 0.11   ← common word, but TF doesn't penalise yet
+```
+
+Raw TF rewards frequency. With `sublinear_tf=True` (what we use), it becomes `log(1 + count)` instead:
+
+```
+cancel:  log(1+2) = 1.10
+order:   log(1+1) = 0.69
+```
+
+This prevents a word appearing 100 times from being treated as 100× more important than one appearing once.
+
+##### Part 2 — Inverse Document Frequency (IDF)
+
+*How rare is this word across all documents in the corpus?*
+
+Imagine the corpus is these 4 intent representatives:
+
+```
+doc 0: "where is my order"
+doc 1: "I want to cancel my order"
+doc 2: "I forgot my password"
+doc 3: "where is my refund"
+```
+
+Count how many documents each word appears in:
+
+```
+word        docs containing it    IDF = log(N / count)
+────────────────────────────────────────────────────────
+my                4               log(4/4) = 0.00   ← in everything → useless
+where             2               log(4/2) = 0.69
+order             2               log(4/2) = 0.69
+I                 2               log(4/2) = 0.69
+cancel            1               log(4/1) = 1.39   ← rare → very informative
+password          1               log(4/1) = 1.39
+refund            1               log(4/1) = 1.39
+```
+
+IDF crushes common words ("my" → IDF=0) and amplifies rare words ("cancel", "refund" → high IDF).
+
+##### Part 3 — TF × IDF together
+
+Final weight for a word = TF × IDF
+
+```
+sentence: "I want to cancel my order"
+
+word      TF      IDF     TF-IDF
+──────────────────────────────────
+cancel    0.22  × 1.39  = 0.31   ← HIGH — rare word, present here
+order     0.11  × 0.69  = 0.08
+I         0.11  × 0.69  = 0.08
+my        0.11  × 0.00  = 0.00   ← zero — too common to carry signal
+want      0.11  × 1.39  = 0.15
+```
+
+The resulting TF-IDF vector is sparse — mostly zeros, with spikes at informative words:
+
+```
+[0, 0, 0.31, 0, 0.08, 0, 0.15, 0, 0, ...]
+          ↑              ↑       ↑
+        cancel          order   want
+```
+
+##### Part 4 — Similarity between two sentences
+
+Two sentences are similar if their TF-IDF vectors point in the same direction (high cosine similarity = high dot product after L2 normalisation).
+
+**Case A — same intent, different words (TF-IDF fails):**
+
+```
+corpus:  "I want to cancel my order"    → spikes at: cancel, order, want
+query:   "please remove my purchase"   → spikes at: remove, purchase, please
+
+shared words: only "my"  (IDF=0, contributes nothing)
+dot product: ≈ 0.00   → TF-IDF says: completely unrelated ✗
+
+reality: both mean cancel_order
+```
+
+TF-IDF has no concept of synonyms. "cancel" ≠ "remove", "order" ≠ "purchase" — even though a human instantly understands they mean the same thing.
+
+**Case B — different intent, shared rare word (TF-IDF is confused):**
+
+```
+corpus:  "my order hasn't arrived"     → spikes at: arrived, order
+query:   "wrong item in my order"      → spikes at: wrong, item, order
+
+shared word: "order" (medium IDF)
+dot product: non-zero  → TF-IDF says: somewhat similar
+
+but: first is order_not_received, second is wrong_item_received — different intents
+```
+
+Shared vocabulary creates false similarity across intents.
+
+**Case C — same intent, no shared words (TF-IDF completely breaks):**
+
+```
+corpus:  "track my package"
+query:   "where is my parcel"
+
+"track" ≠ "parcel",  "package" ≠ "where"
+shared:  only "my" → IDF=0
+
+dot product: 0.00   → TF-IDF says: completely unrelated ✗
+```
+
+A human immediately knows these mean the same thing. TF-IDF cannot.
+
+##### Part 5 — The vector comparison
+
+```
+"I want to cancel my order"
+
+TF-IDF vector  (sparse):
+[0, 0, 0.31, 0, 0.08, 0, 0.15, 0, ...]   length = vocab_size (thousands of dims)
+          ↑              ↑       ↑
+       cancel           order   want      ← only 3 non-zero values out of thousands
+
+Embedding vector  (dense):
+[0.3, -0.5, 0.8, 0.1, -0.2, ...]         length = 128
+  all 128 values carry learned meaning    ← no zeros, every dim contributes
+```
+
+TF-IDF: sparse, exact-word language.
+Embedding: dense, learned-meaning language.
+
+---
+
+#### Why the embedding model beats TF-IDF
+
+The fine-tuned model learned that "cancel order" and "remove purchase" should have similar vectors — because during training they always appeared as positive pairs (same intent). After training:
+
+```
+embed("I want to cancel my order")   → [0.3, -0.5, 0.8, ...]
+embed("please remove my purchase")   → [0.3, -0.5, 0.7, ...]
+cosine similarity: 0.97  ✓
+```
+
+The same two sentences under TF-IDF:
+
+```
+tfidf("I want to cancel my order")   → spikes at cancel, order
+tfidf("please remove my purchase")   → spikes at remove, purchase
+cosine similarity: 0.00  ✗
+```
+
+The key insight: **TF-IDF compares surface form. Embeddings compare learned meaning.**
+
+That is the entire value proposition of training a model. The evaluation in `evaluate.py` will put a number on exactly how large this gap is on our 150-intent test set.
 
 ---
 
