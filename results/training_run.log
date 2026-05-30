@@ -1,0 +1,43 @@
+$ python train.py
+
+  Device: cpu
+Loading e-commerce intent dataset...
+  Trying HuggingFace Hub...
+  Source  : HuggingFace Hub (clinc/clinc_oos)
+  Intents : 150
+  Train   : 7,500 queries
+  Val     : 3,000 queries
+  Test    : 4,500 queries
+
+Building tokenizer...
+  Vocab size: 3689
+
+Building model...
+  Parameters: 872,576
+
+Creating training pairs...
+  Created 3,000 training pairs across 150 intents
+  Warning: batch_size 20 is not a multiple of n_intents 150. Some batches may have slight intent imbalance.
+  Pairs         : 3,000
+  Batches/epoch : 150
+
+Training for 15 epochs...
+  Epoch 01 | loss 2.5949 | acc 22.1% | time 2.6s
+  Epoch 02 | loss 1.2942 | acc 59.1% | time 3.0s
+  Epoch 03 | loss 0.6335 | acc 79.4% | time 2.7s
+  Epoch 04 | loss 0.3193 | acc 89.6% | time 2.8s
+  Epoch 05 | loss 0.1796 | acc 93.7% | time 2.7s
+  Epoch 06 | loss 0.1311 | acc 95.8% | time 2.7s
+  Epoch 07 | loss 0.0751 | acc 97.4% | time 2.5s
+  Epoch 08 | loss 0.0637 | acc 98.2% | time 2.8s
+  Epoch 09 | loss 0.0391 | acc 98.9% | time 2.7s
+  Epoch 10 | loss 0.0326 | acc 99.2% | time 2.7s
+  Epoch 11 | loss 0.0205 | acc 99.5% | time 2.6s
+  Epoch 12 | loss 0.0154 | acc 99.5% | time 2.5s
+  Epoch 13 | loss 0.0109 | acc 99.8% | time 2.5s
+  Epoch 14 | loss 0.0134 | acc 99.7% | time 2.6s
+  Epoch 15 | loss 0.0108 | acc 99.7% | time 2.5s
+
+  Model     → ../models/finetuned/model.pt
+  Tokenizer → ../models/finetuned/tokenizer.json
+  Config    → ../models/finetuned/config.json
