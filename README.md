@@ -13,7 +13,8 @@ embedding_training/
 │   ├── tokenizer.py              # SimpleTokenizer implementation
 │   ├── model.py                  # Embedding model (config + attention)
 │   ├── synthetic_data.py         # Synthetic e-commerce intent dataset
-│   └── data_preparation.py      # Dataset loading, training pairs, batch sampler
+│   ├── data_preparation.py       # Dataset loading, training pairs, batch sampler
+│   └── train.py                  # Training loop, loss function, scheduler
 ├── models/                       # Trained model checkpoints
 ├── results/                      # Evaluation plots and metrics
 └── requirements.txt
@@ -67,6 +68,7 @@ Work through the steps below in order. Each step introduces one component, with 
 | 3 | `TransformerBlock` — attention + FFN | Done |
 | 4 | `MiniIntentEmbedder` — full model | Done |
 | 5 | Data preparation — dataset loading, training pairs, batch sampler | Done |
+| 6 | Training — contrastive loss, custom DataLoader, LR schedule | Done |
 
 ---
 
@@ -896,6 +898,191 @@ for batch_indices in sampler:
     assert len(batch_intents) == len(set(batch_intents)), "False negative detected!"
 print("All batches clean — zero false negatives confirmed.")
 ```
+
+---
+
+### Step 6 — Training
+
+**Goal:** Train the model using contrastive learning so same-intent queries end up close together in embedding space and different-intent queries end up far apart.
+
+**Key file:** `customer_intent_search/train.py`
+
+#### What to do
+
+```bash
+cd customer_intent_search
+python train.py              # full 15 epochs
+python train.py --epochs 3   # quick test
+python train.py --help       # see all options
+```
+
+#### Expected output
+
+```
+  Device: cpu
+
+Loading e-commerce intent dataset...
+  Source  : Synthetic (local e-commerce fallback)
+  Intents : 20
+  Train   : 3,000 queries
+
+Building tokenizer...
+  Vocab size: 412
+
+Building model...
+  Parameters: 453,248
+
+Creating training pairs...
+  Created 400 training pairs across 20 intents
+  Pairs         : 400
+  Batches/epoch : 20
+
+Training for 15 epochs...
+  Epoch 01 | loss 2.9814 | acc  5.0% | time 0.3s
+  Epoch 05 | loss 1.2341 | acc 65.0% | time 0.3s
+  Epoch 10 | loss 0.4821 | acc 88.0% | time 0.3s
+  Epoch 15 | loss 0.2103 | acc 97.5% | time 0.3s
+
+  Model     → ../models/finetuned/model.pt
+  Tokenizer → ../models/finetuned/tokenizer.json
+  Config    → ../models/finetuned/config.json
+```
+
+Loss should drop steadily epoch by epoch. Accuracy should climb from ~5% (random) toward 97%+.
+
+#### `MultipleNegativesRankingLoss`
+
+Contrastive loss that reuses cross entropy. For a batch of `(anchor, positive)` pairs:
+
+```
+Embed all anchors   → A  shape (batch_size, 128)
+Embed all positives → P  shape (batch_size, 128)
+Similarity matrix   → S = A @ Pᵀ  shape (batch_size, batch_size)
+```
+
+The similarity matrix has two regions:
+
+```
+              pos_0          pos_1          pos_2
+           "track pkg"   "want cancel"  "refund not rcvd"
+
+anc_0  →  [ 0.92 ✓        0.21 ✗          0.18 ✗ ]
+anc_1  →  [ 0.19 ✗        0.89 ✓          0.22 ✗ ]
+anc_2  →  [ 0.15 ✗        0.20 ✗          0.91 ✓ ]
+
+✓ diagonal     = correct matches  → cross entropy pushes these HIGH
+✗ off-diagonal = wrong matches    → cross entropy pushes these LOW
+```
+
+Cross entropy for row 0:
+```
+loss = -log( e^0.92 / (e^0.92 + e^0.21 + e^0.18) )
+              ↑ correct   ↑────── all negatives ──↑
+```
+
+The denominator includes **every cell** — correct and negatives. If any negative score creeps up, the denominator grows, the correct probability drops, and loss increases. Backprop then pushes the anchor away from that negative.
+
+**Temperature τ = 0.05** sharpens the scores before softmax:
+```
+raw scores:  [0.9, 0.3, 0.2]
+τ = 1.0   →  softmax → [0.41, 0.22, 0.20]   soft, spread out
+τ = 0.05  →  softmax → [0.99, 0.00, 0.00]   sharp, peaked
+```
+
+Low temperature creates harder training signal — the model is more strongly penalized for any confusion between intents.
+
+#### `PairDataset`
+
+PyTorch's `DataLoader` requires a `Dataset` object with two methods:
+
+- `__len__()` — total number of pairs
+- `__getitem__(idx)` — returns `(anchor_text, positive_text)` for that index
+
+`PairDataset` wraps our flat list of `InputExample` objects into this contract. It stores raw strings only — no tokenization yet.
+
+#### `make_collate_fn()`
+
+`DataLoader` calls `collate_fn` on each batch to convert a list of raw string tuples into tensors the model can consume.
+
+We use a **closure** — a function that captures the tokenizer from its outer scope — because `DataLoader` expects `collate_fn` to take only one argument (the batch):
+
+```
+batch = [
+    ("where is my order",  "track my package"),
+    ("cancel my order",    "I want to cancel"),
+    ...
+]
+        ↓ collate_fn
+        ↓
+anchor_ids:    (batch_size, 32)   token IDs for anchors
+anchor_mask:   (batch_size, 32)   1=real token, 0=padding
+positive_ids:  (batch_size, 32)   token IDs for positives
+positive_mask: (batch_size, 32)   1=real token, 0=padding
+```
+
+#### `make_scheduler()`
+
+Learning rate schedule with two phases:
+
+```
+lr
+3e-4 |         *─────────*
+     |        *           *
+     |       *              *
+     |      *                 *
+3e-5 |─────*                    *────
+     └──────────────────────────────→ steps
+       warmup      decay
+```
+
+| Phase | Steps | Behaviour |
+|---|---|---|
+| Warmup | 0 → 50 | lr increases 0 → 3e-4. Weights are random at start — small steps prevent unstable updates |
+| Decay | 50 → 300 | lr decreases 3e-4 → 3e-5. Model is converging — smaller steps prevent overshooting |
+
+#### `train_one_epoch()`
+
+Four operations happen for every batch:
+
+```
+1. FORWARD   embed anchors + positives → compute loss
+2. BACKWARD  zero_grad → loss.backward() → clip_grad_norm_()
+3. UPDATE    optimizer.step() → scheduler.step()
+4. METRICS   track loss and Recall@1 accuracy
+```
+
+**Gradient clipping** — `clip_grad_norm_(max_norm=1.0)` prevents any gradient vector from having norm > 1. Early in training, random weights can produce large gradients that destabilize updates. Clipping keeps updates bounded.
+
+**`optimizer.zero_grad()`** must be called before every `loss.backward()` because PyTorch accumulates gradients by default:
+```
+without zero_grad: gradients pile up across batches → wrong updates
+with zero_grad:    fresh gradients each batch → correct updates
+```
+
+#### What gets saved
+
+| File | Contents | Used by |
+|---|---|---|
+| `model.pt` | All learned weight tensors (`state_dict`) | evaluate.py, inference_demo.py |
+| `tokenizer.json` | Vocabulary mapping | evaluate.py, inference_demo.py |
+| `config.json` | Hyperparameters + per-epoch loss/accuracy history | Debugging, reproducibility |
+
+To reload the model later:
+```python
+model = build_model(tokenizer)
+model.load_state_dict(torch.load("../models/finetuned/model.pt"))
+```
+
+#### Default hyperparameters
+
+| Argument | Default | Why |
+|---|---|---|
+| `--epochs` | 15 | Enough for loss to converge on 400 pairs |
+| `--batch-size` | 20 | Matches number of intents → zero false negatives |
+| `--pairs-per-intent` | 20 | 20 × 20 = 400 total pairs |
+| `--lr` | 3e-4 | Good default for AdamW on small models |
+| `--temperature` | 0.05 | Sharp contrastive signal |
+| `--warmup-steps` | 50 | ~2-3 epochs of warmup |
 
 ---
 
