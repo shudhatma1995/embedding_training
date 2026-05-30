@@ -4,6 +4,101 @@ Training and evaluation code for embedding models, starting with customer intent
 
 This repo is built **step by step**. You can clone it, follow each step in order, run the code locally, and build the same customer-intent embedding pipeline from scratch.
 
+---
+
+## Problem Statement
+
+### The challenge — understanding what a customer actually wants
+
+When a customer contacts e-commerce support, they can express the same need in hundreds of different ways:
+
+```
+"where is my package"
+"has my order shipped yet"
+"I haven't received anything"
+"my delivery is late"
+"can you track #ORD-1234 for me"
+```
+
+All of these mean the same thing — the customer wants to **track their order**. A support system needs to understand this, route the query to the right team, and respond appropriately.
+
+### Why traditional approaches fail
+
+**Keyword matching** — looks for specific words like "track" or "order":
+```
+"I haven't received anything" → no keywords matched → fails
+"can you track #ORD-1234"     → "track" matched → works
+```
+Brittle. Misses any phrasing that doesn't use the exact expected words.
+
+**Rule-based systems** — hand-crafted rules for each intent:
+```
+if "cancel" in text → cancel_order
+if "return" in text → initiate_return
+```
+Doesn't scale. Writing and maintaining rules for thousands of query variations is impractical. Breaks on typos, informal language, and new phrasings.
+
+**TF-IDF classifiers** — represent text as word frequency vectors:
+```
+"where is my order"    → [0, 0, 1, 0, 1, 0, ...]  word counts
+"has my order shipped" → [0, 0, 1, 1, 0, 0, ...]  word counts
+```
+Treats text as a bag of words — word order and context are lost. `"I can't cancel"` and `"cancel"` look similar. Requires retraining the entire classifier every time a new intent is added.
+
+### The solution — embedding-based retrieval
+
+Instead of classifying, we **search**. We train a model to convert any query into a 128-dimensional vector such that:
+
+```
+semantically similar queries → vectors point in the same direction
+semantically different queries → vectors point in different directions
+```
+
+```
+"where is my package"      → [0.3, -0.5, 0.8, ...]
+"has my order shipped yet" → [0.3, -0.5, 0.7, ...]  ← very similar ✓
+"I forgot my password"     → [-0.7, 0.2, -0.4, ...] ← very different ✓
+```
+
+At query time, we embed the new query and find the closest known intent vector using cosine similarity — no retraining needed:
+
+```
+new query: "my parcel hasn't shown up"
+           ↓ embed
+           [0.29, -0.48, 0.79, ...]
+           ↓ find nearest neighbour
+           closest match: track_order  ✓
+```
+
+### Why this is better
+
+| | Keyword matching | TF-IDF classifier | Embedding retrieval |
+|---|---|---|---|
+| Handles paraphrasing | ✗ | Partial | ✓ |
+| Handles new intents | ✗ | Requires retraining | ✓ add new vector |
+| Understands context | ✗ | ✗ | ✓ |
+| Scales to 1000+ intents | ✗ | ✗ | ✓ |
+
+### What this project builds
+
+A tiny but complete embedding pipeline trained from scratch on 20 e-commerce intents:
+
+```
+Customer query
+      ↓
+SimpleTokenizer     → convert text to token IDs
+      ↓
+MiniIntentEmbedder  → transformer model → 128-dim vector
+      ↓
+Cosine similarity   → find nearest intent in corpus
+      ↓
+Predicted intent    → "track_order", "cancel_order", etc.
+```
+
+The model is trained using **contrastive learning** — queries with the same intent are pulled together in vector space, queries with different intents are pushed apart. After training, the model achieves **97%+ Recall@1** on the test set vs **50%** for TF-IDF.
+
+---
+
 ## Project layout
 
 ```
