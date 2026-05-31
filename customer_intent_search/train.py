@@ -1,9 +1,12 @@
 import argparse
+import copy
 import os
 import time
 import json
 import random
+from collections import defaultdict
 
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -28,6 +31,14 @@ class MultipleNegativesRankingLoss(nn.Module):
       - Diagonal            = correct matches  → should be HIGH
       - Off-diagonal        = wrong matches    → should be LOW
       - Loss = cross entropy treating diagonal as the correct class
+
+    Hard negative extension (when hard_neg_emb is provided):
+      - hard_neg_emb shape: (B * k, D) where k = hn_top_k
+      - Reshaped to (B, k, D): each anchor has its own k hard negatives
+      - Per-anchor similarity computed via bmm: (B, 1, D) @ (B, D, k) → (B, k)
+      - Appended to sim matrix: (B, B) → (B, B + k)
+      - Correct label unchanged (still the diagonal index)
+      - This forces the model to rank each anchor's hard negs below its true positive
     """
 
     def __init__(self, temperature: float = 0.05):
@@ -39,28 +50,36 @@ class MultipleNegativesRankingLoss(nn.Module):
 
     def forward(
         self,
-        anchor_emb: torch.Tensor,    # (batch_size, 128)
-        positive_emb: torch.Tensor,  # (batch_size, 128)
+        anchor_emb: torch.Tensor,           # (B, D)
+        positive_emb: torch.Tensor,         # (B, D)
+        hard_neg_emb: torch.Tensor = None,  # (B*k, D) or None
     ) -> torch.Tensor:
 
-        # similarity matrix: every anchor vs every positive
+        # standard MNR: similarity of every anchor against every positive
         # sim[i][j] = similarity of anchor_i with positive_j
-        # shape (batch_size, batch_size)
         sim = torch.matmul(anchor_emb, positive_emb.T) / self.temperature
 
-        # correct label for each anchor = its own index
-        # anchor_0 → positive_0, anchor_1 → positive_1, etc.
-        # e.g. labels = [0, 1, 2, ..., batch_size-1]
+        # correct label for each anchor = its own index (the diagonal)
         labels = torch.arange(sim.shape[0], device=sim.device)
 
-        # cross entropy:
-        # treats each row of sim as logits over all positives
-        # correct class = diagonal index
-        # loss is low  when sim[i][i] >> sim[i][j] for all j≠i
-        # loss is high when sim[i][i] is not the highest in row i
-        loss = F.cross_entropy(sim, labels)
+        if hard_neg_emb is not None:
+            B, D = anchor_emb.shape
+            # infer k from tensor shape: hard_neg_emb is [B*k, D]
+            k = hard_neg_emb.shape[0] // B
+            # reshape to [B, k, D]: each anchor gets its own k hard negatives
+            hn = hard_neg_emb.view(B, k, D)
+            # per-anchor hard neg similarity via batched matmul:
+            #   [B, 1, D] @ [B, D, k] → [B, 1, k] → squeeze → [B, k]
+            hard_sim = torch.bmm(
+                anchor_emb.unsqueeze(1),
+                hn.transpose(1, 2),
+            ).squeeze(1) / self.temperature
+            # append hard neg similarities as extra columns
+            # sim: [B, B+k] — model must rank column i highest for each row
+            sim = torch.cat([sim, hard_sim], dim=1)
 
-        return loss
+        # cross entropy: correct class = diagonal index (unchanged by concatenation)
+        return F.cross_entropy(sim, labels)
 
 
 # ── Dataset ────────────────────────────────────────────────────────────────────
@@ -68,45 +87,125 @@ class MultipleNegativesRankingLoss(nn.Module):
 class PairDataset(Dataset):
     """
     Wraps a list of InputExample pairs for PyTorch DataLoader.
-    Each item returns (anchor_text, positive_text).
+    Each item returns (anchor_text, positive_text, intent_id).
+    intent_id is passed through the DataLoader so the collate_fn
+    can sample hard negatives from the correct intent pool.
     """
 
-    def __init__(self, pairs):
-        # pairs = list of InputExample objects
-        # e.g. [InputExample(["where is my order", "track my package"]), ...]
-        self.pairs = pairs
+    def __init__(self, pairs, intent_ids):
+        # pairs      = list of InputExample objects
+        # intent_ids = parallel list of intent IDs, one per pair
+        self.pairs      = pairs
+        self.intent_ids = intent_ids
 
     def __len__(self):
-        # tells DataLoader how many items exist in total
         return len(self.pairs)
 
     def __getitem__(self, idx):
-        # returns (anchor_text, positive_text) for this index
         anchor   = self.pairs[idx].texts[0]
         positive = self.pairs[idx].texts[1]
-        return anchor, positive
+        intent   = self.intent_ids[idx]
+        return anchor, positive, intent
 
 
 # ── Collate Function ───────────────────────────────────────────────────────────
 
-def make_collate_fn(tokenizer):
+def make_collate_fn(tokenizer, hard_neg_map=None, hn_top_k=1):
     """
-    Returns a closure that tokenizes a batch of (anchor, positive) pairs.
-    DataLoader calls this to convert raw strings into tensors.
+    Returns a closure that tokenizes a batch of (anchor, positive, intent) tuples.
+
+    hard_neg_map : dict {intent_id: [hard_neg_text, ...]} built by
+                   mine_hard_negatives(); None = standard training (no hard negs)
+    hn_top_k     : how many hard negatives to sample per anchor.
+                   The loss infers k from hard_neg_emb.shape[0] // B.
+
+    Returns a 6-tuple:
+        anchor_ids, anchor_mask, positive_ids, positive_mask, hn_ids, hn_mask
+    hn_ids / hn_mask are None when hard_neg_map is None.
     """
 
     def collate_fn(batch):
-        # separate anchors and positives from list of tuples
         anchors   = [item[0] for item in batch]
         positives = [item[1] for item in batch]
+        intents   = [item[2] for item in batch]
 
-        # tokenize both into tensors of shape (batch_size, max_seq_len)
         anchor_ids,   anchor_mask   = tokenizer.encode_batch(anchors)
         positive_ids, positive_mask = tokenizer.encode_batch(positives)
 
-        return anchor_ids, anchor_mask, positive_ids, positive_mask
+        if hard_neg_map is not None:
+            # for each anchor, sample hn_top_k hard negatives from its intent pool
+            # result: B * hn_top_k texts (anchor_0's negs, then anchor_1's, ...)
+            hard_neg_texts = []
+            for intent in intents:
+                pool = hard_neg_map[intent]
+                for _ in range(hn_top_k):
+                    hard_neg_texts.append(random.choice(pool))
+            # tokenize to [B * hn_top_k, seq_len]
+            hn_ids, hn_mask = tokenizer.encode_batch(hard_neg_texts)
+            return anchor_ids, anchor_mask, positive_ids, positive_mask, hn_ids, hn_mask
+
+        return anchor_ids, anchor_mask, positive_ids, positive_mask, None, None
 
     return collate_fn
+
+
+# ── Hard Negative Mining ───────────────────────────────────────────────────────
+
+def mine_hard_negatives(model, tokenizer, intent_groups, top_k=1, device="cpu"):
+    """
+    Offline hard negative mining: embed all training queries with the current
+    model weights and find the top-K most similar queries from a *different* intent.
+
+    Why this helps:
+        In-batch negatives are mostly easy (track_order vs reset_password).
+        After a few epochs, easy negatives contribute almost no gradient signal
+        and val accuracy plateaus. Hard negatives force the model to sharpen
+        the boundary between *confusable* intents (cancel_order vs modify_order).
+
+    Algorithm:
+        1. embed all training queries → [N, 128] matrix (L2-normalised)
+        2. cosine similarity matrix   → [N, N]  (dot product of unit vectors)
+        3. for each query i:
+               mask same-intent entries (set score = -2.0)
+               take top-K highest-similarity entries from different intents
+               add them to that intent's hard-neg pool
+        4. repeat every hn_refresh_every epochs as the model improves
+
+    Args:
+        model         : MiniIntentEmbedder (current weights)
+        tokenizer     : fitted SimpleTokenizer
+        intent_groups : dict {intent_id: [query strings]} — the training set
+        top_k         : how many hard negatives to mine per query
+        device        : "cpu" or "cuda"
+
+    Returns:
+        dict {intent_id: [list of hard negative text strings]}
+        Pool size per intent = top_k * n_queries_for_that_intent.
+        The collate_fn samples randomly from this pool each batch.
+    """
+    all_texts, all_labels = [], []
+    for intent_id, queries in intent_groups.items():
+        for q in queries:
+            all_texts.append(q)
+            all_labels.append(intent_id)
+
+    labels_arr = np.array(all_labels)
+
+    # embed all training queries — model.encode handles batching + no_grad
+    embeddings = model.encode(all_texts, tokenizer, device=device)  # [N, 128]
+
+    # cosine similarity (L2-normalised → dot product = cosine)
+    sim = embeddings @ embeddings.T  # [N, N]
+
+    hard_negs = defaultdict(list)
+    for i, label in enumerate(all_labels):
+        scores = sim[i].copy()
+        scores[labels_arr == label] = -2.0   # mask same-intent (including self)
+        top_idx = np.argsort(-scores)[:top_k]
+        for idx in top_idx:
+            hard_negs[label].append(all_texts[idx])
+
+    return dict(hard_negs)
 
 
 # ── Learning Rate Scheduler ────────────────────────────────────────────────────
@@ -168,13 +267,13 @@ def evaluate_val(
     )
 
     # build val dataloader — same structure as training
-    n_intents  = len(val_data)
+    n_intents   = len(val_data)
     val_sampler = IntentAwareBatchSampler(val_intent_ids, batch_size=n_intents)
-    val_dataset = PairDataset(val_pairs)
+    val_dataset = PairDataset(val_pairs, val_intent_ids)
     val_loader  = DataLoader(
         val_dataset,
         batch_sampler=val_sampler,
-        collate_fn=make_collate_fn(tokenizer),
+        collate_fn=make_collate_fn(tokenizer),  # no hard negs during validation
     )
 
     # switch to eval mode — disables dropout so results are deterministic
@@ -185,9 +284,8 @@ def evaluate_val(
     total_pairs   = 0
 
     # torch.no_grad() — skip gradient computation entirely
-    # saves memory and speeds up inference
     with torch.no_grad():
-        for anchor_ids, anchor_mask, positive_ids, positive_mask in val_loader:
+        for anchor_ids, anchor_mask, positive_ids, positive_mask, _, _ in val_loader:
 
             anchor_ids    = anchor_ids.to(device)
             anchor_mask   = anchor_mask.to(device)
@@ -198,7 +296,7 @@ def evaluate_val(
             anchor_emb   = model(anchor_ids,   anchor_mask)
             positive_emb = model(positive_ids, positive_mask)
 
-            # compute val loss
+            # compute val loss (no hard negatives during evaluation)
             loss = loss_fn(anchor_emb, positive_emb)
             total_loss += loss.item()
 
@@ -235,6 +333,9 @@ def train_one_epoch(
     Run one full pass over all training batches.
     Optionally evaluates on val set at end of epoch.
 
+    Hard negatives are embedded inside this function when hn_ids is non-None
+    in the batch (provided by make_collate_fn when hard_neg_map is active).
+
     Returns dict with train_loss, train_accuracy, and optionally val metrics.
     """
 
@@ -245,7 +346,7 @@ def train_one_epoch(
     total_pairs   = 0
     start_time    = time.time()
 
-    for anchor_ids, anchor_mask, positive_ids, positive_mask in dataloader:
+    for anchor_ids, anchor_mask, positive_ids, positive_mask, hn_ids, hn_mask in dataloader:
 
         # move to device
         anchor_ids    = anchor_ids.to(device)
@@ -257,8 +358,13 @@ def train_one_epoch(
         anchor_emb   = model(anchor_ids,   anchor_mask)
         positive_emb = model(positive_ids, positive_mask)
 
-        # compute loss
-        loss = loss_fn(anchor_emb, positive_emb)
+        # embed hard negatives if provided — shape [B*k, D]
+        hard_neg_emb = None
+        if hn_ids is not None:
+            hard_neg_emb = model(hn_ids.to(device), hn_mask.to(device))
+
+        # compute loss — loss infers k from hard_neg_emb.shape when provided
+        loss = loss_fn(anchor_emb, positive_emb, hard_neg_emb)
 
         # backward pass
         optimizer.zero_grad()
@@ -294,8 +400,6 @@ def train_one_epoch(
         metrics["val_accuracy"] = val_metrics["val_accuracy"]
 
         # overfitting indicator: gap between train and val loss
-        # small gap  → generalising well
-        # large gap  → memorising training data
         gap = val_metrics["val_loss"] - train_loss
         overfit_flag = " ⚠ overfit?" if gap > 1.0 else ""
 
@@ -554,19 +658,126 @@ def plot_experiment_comparison(experiments: list, output_dir: str):
     return plot_path
 
 
+def plot_hn_experiment_comparison(experiments: list, output_dir: str):
+    """
+    4-panel comparison chart for hard negative top_k experiments.
+
+    experiments: list of dicts with "label", "history", "color".
+
+    Panels:
+        Top-left:     Validation loss curves per top_k config
+        Top-right:    Validation accuracy curves per top_k config
+        Bottom-left:  Overfitting gap (val_loss - train_loss) per config
+        Bottom-right: Best val accuracy summary bar chart
+    """
+
+    fig, axes = plt.subplots(2, 2, figsize=(16, 12))
+    fig.suptitle("Hard Negative Mining — top_k Comparison",
+                 fontsize=14, fontweight="bold")
+    ax1, ax2 = axes[0]
+    ax3, ax4 = axes[1]
+
+    summary_labels    = []
+    summary_best_accs = []
+    summary_colors    = []
+
+    for exp in experiments:
+        history    = exp["history"]
+        label      = exp["label"]
+        color      = exp["color"]
+        epochs     = list(range(1, len(history) + 1))
+        has_val    = "val_loss" in history[0]
+        train_loss = [h["loss"] for h in history]
+
+        if has_val:
+            val_loss   = [h["val_loss"]     for h in history]
+            val_acc    = [h["val_accuracy"] * 100 for h in history]
+            gap        = [v - t for v, t in zip(val_loss, train_loss)]
+            best_acc   = max(val_acc)
+            best_epoch = val_acc.index(best_acc) + 1
+
+            ax1.plot(epochs, val_loss, color=color, linewidth=2,
+                     marker="o", markersize=3, label=label)
+            ax1.annotate(f"{val_loss[-1]:.2f}", xy=(epochs[-1], val_loss[-1]),
+                         xytext=(4, 0), textcoords="offset points", fontsize=8, color=color)
+
+            ax2.plot(epochs, val_acc, color=color, linewidth=2,
+                     marker="o", markersize=3,
+                     label=f"{label}  (best {best_acc:.1f}% @ ep{best_epoch})")
+            ax2.scatter([best_epoch], [best_acc], color=color, s=80,
+                        zorder=5, edgecolors="white", linewidth=1.5)
+
+            ax3.plot(epochs, gap, color=color, linewidth=2,
+                     marker="o", markersize=3, label=label)
+
+            summary_labels.append(label)
+            summary_best_accs.append(best_acc)
+            summary_colors.append(color)
+
+    ax1.set_title("Validation Loss per Config", fontsize=12)
+    ax1.set_xlabel("Epoch")
+    ax1.set_ylabel("Cross-Entropy Loss")
+    ax1.legend(fontsize=9)
+    ax1.grid(True, alpha=0.3)
+
+    ax2.axhline(y=95, color="gray", linestyle="--", alpha=0.4, label="95% reference")
+    ax2.set_title("Validation Accuracy per Config", fontsize=12)
+    ax2.set_xlabel("Epoch")
+    ax2.set_ylabel("Accuracy (%)")
+    ax2.set_ylim(0, 108)
+    ax2.legend(fontsize=8)
+    ax2.grid(True, alpha=0.3)
+
+    ax3.axhline(y=0.5, color="#e74c3c", linestyle="--", alpha=0.5, label="Overfit threshold")
+    ax3.axhline(y=0.0, color="black", linewidth=0.8)
+    ax3.set_title("Overfitting Gap (val_loss − train_loss)", fontsize=12)
+    ax3.set_xlabel("Epoch")
+    ax3.set_ylabel("Loss Gap")
+    ax3.legend(fontsize=8)
+    ax3.grid(True, alpha=0.3, axis="y")
+
+    if summary_best_accs:
+        bars = ax4.bar(summary_labels, summary_best_accs,
+                       color=summary_colors, alpha=0.8,
+                       edgecolor="white", linewidth=1.5)
+        for bar, acc in zip(bars, summary_best_accs):
+            ax4.text(bar.get_x() + bar.get_width() / 2,
+                     bar.get_height() + 0.5,
+                     f"{acc:.1f}%",
+                     ha="center", va="bottom", fontsize=11, fontweight="bold")
+    ax4.axhline(y=95, color="gray", linestyle="--", alpha=0.4, label="95% reference")
+    ax4.set_title("Best Validation Accuracy per Config", fontsize=12)
+    ax4.set_ylabel("Best Val Accuracy (%)")
+    ax4.set_ylim(0, (max(summary_best_accs) * 1.25) if summary_best_accs else 100)
+    ax4.legend(fontsize=9)
+    ax4.grid(True, alpha=0.3, axis="y")
+
+    plt.tight_layout()
+    plot_path = os.path.join(output_dir, "hn_comparison.png")
+    plt.savefig(plot_path, dpi=150, bbox_inches="tight")
+    plt.close()
+
+    print(f"  HN comparison plot → {plot_path}")
+    return plot_path
+
+
 # ── Main Train Function ────────────────────────────────────────────────────────
 
 def train(args) -> tuple:
     """
-    Full training pipeline with validation tracking.
+    Full training pipeline with validation tracking and optional hard negative mining.
 
     Steps:
         1. Load dataset (train + val + test)
         2. Build tokenizer on train data
         3. Build model
-        4. Create training pairs + IntentAwareBatchSampler
-        5. Train N epochs — evaluate on val set each epoch
-        6. Save model, tokenizer, config, plots
+        4. Create training pairs + PairDataset
+        5. Optimizer + scheduler + loss
+        6. Training loop — each epoch:
+               a. Optionally mine hard negatives (offline, every N epochs)
+               b. Build DataLoader with current hard_neg_map
+               c. train_one_epoch → evaluate on val set
+        7. Save model, tokenizer, config, plots
     """
 
     random.seed(args.seed)
@@ -597,7 +808,7 @@ def train(args) -> tuple:
     model = model.to(device)
     print(f"  Parameters: {model.n_parameters():,}")
 
-    # ── Step 4: Training pairs + DataLoader ────────────────────
+    # ── Step 4: Training pairs + Dataset ───────────────────────
     print("\nCreating training pairs...")
     pairs, intent_ids = create_training_pairs(
         train_data,
@@ -605,25 +816,30 @@ def train(args) -> tuple:
         seed=args.seed,
     )
 
-    sampler    = IntentAwareBatchSampler(intent_ids, batch_size=args.batch_size)
-    dataset    = PairDataset(pairs)
-    dataloader = DataLoader(
-        dataset,
-        batch_sampler=sampler,
-        collate_fn=make_collate_fn(tokenizer),
-    )
+    dataset           = PairDataset(pairs, intent_ids)
+    batches_per_epoch = len(pairs) // args.batch_size
 
     print(f"  Pairs         : {len(pairs):,}")
-    print(f"  Batches/epoch : {len(sampler)}")
+    print(f"  Batches/epoch : {batches_per_epoch}")
 
     # ── Step 5: Optimizer + scheduler + loss ───────────────────
     optimizer   = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=0.01)
-    total_steps = len(sampler) * args.epochs
+    total_steps = batches_per_epoch * args.epochs
     scheduler   = make_scheduler(optimizer, args.warmup_steps, total_steps)
     loss_fn     = MultipleNegativesRankingLoss(temperature=args.temperature)
 
     # ── Step 6: Training loop ──────────────────────────────────
+    use_hn     = getattr(args, 'hard_negatives', False)
+    hn_top_k   = getattr(args, 'hn_top_k', 1)
+    hn_start   = getattr(args, 'hn_start_epoch', 4)
+    hn_refresh = getattr(args, 'hn_refresh_every', 3)
+
+    hard_neg_map = None   # starts None — enabled after warm-up
+
     print(f"\nTraining for {args.epochs} epochs...")
+    if use_hn:
+        print(f"  Hard negatives: top_k={hn_top_k}, "
+              f"start_epoch={hn_start}, refresh_every={hn_refresh}")
     print(f"  {'Epoch':>5} | {'train_loss':>10} | {'train_acc':>9} | "
           f"{'val_loss':>8} | {'val_acc':>7} | {'time':>6}")
     print("  " + "─" * 65)
@@ -631,6 +847,22 @@ def train(args) -> tuple:
     history = []
 
     for epoch in range(1, args.epochs + 1):
+
+        # mine hard negatives at configured intervals (after warm-up)
+        if use_hn and epoch >= hn_start and (epoch - hn_start) % hn_refresh == 0:
+            print(f"  [HN] Mining hard negatives (top_k={hn_top_k})...")
+            hard_neg_map = mine_hard_negatives(
+                model, tokenizer, train_data, top_k=hn_top_k, device=device
+            )
+
+        # rebuild DataLoader each epoch — collate_fn may carry updated hard_neg_map
+        sampler    = IntentAwareBatchSampler(intent_ids, batch_size=args.batch_size)
+        dataloader = DataLoader(
+            dataset,
+            batch_sampler=sampler,
+            collate_fn=make_collate_fn(tokenizer, hard_neg_map, hn_top_k),
+        )
+
         metrics = train_one_epoch(
             model, dataloader, optimizer, scheduler,
             loss_fn, device, epoch,
@@ -666,6 +898,8 @@ def train(args) -> tuple:
             "temperature":      args.temperature,
             "pairs_per_intent": args.pairs_per_intent,
             "vocab_size":       tokenizer.vocab_size,
+            "hard_negatives":   use_hn,
+            "hn_top_k":         hn_top_k if use_hn else 0,
             "history":          history,
         }, f, indent=2)
 
@@ -682,7 +916,7 @@ def train(args) -> tuple:
     return model, tokenizer, args.output_dir
 
 
-# ── Experiment Runner ──────────────────────────────────────────────────────────
+# ── Temperature Experiment Runner ──────────────────────────────────────────────
 
 def run_experiments(base_args, results_dir: str):
     """
@@ -715,14 +949,10 @@ def run_experiments(base_args, results_dir: str):
         print(f"  EXPERIMENT: {config['label']}")
         print(f"{'='*65}")
 
-        # copy base args and override temperature + output dir
-        import copy
         exp_args = copy.deepcopy(base_args)
         exp_args.temperature      = config["temperature"]
         exp_args.experiment_label = config["label"]
 
-        # model artifacts (model.pt / tokenizer.json / config.json) → models/experiments/
-        # plots (training_curves_*.png)                              → results/experiments/
         safe_label            = config["label"].replace("=", "_")
         models_subdir         = os.path.join(
             os.path.dirname(results_dir), "models", "experiments", safe_label
@@ -732,7 +962,6 @@ def run_experiments(base_args, results_dir: str):
 
         _, _, _ = train(exp_args)
 
-        # load history from saved config
         config_path = os.path.join(exp_args.output_dir, "config.json")
         with open(config_path) as f:
             saved = json.load(f)
@@ -777,11 +1006,103 @@ def run_experiments(base_args, results_dir: str):
     return all_experiments
 
 
+# ── Hard Negative Experiment Runner ───────────────────────────────────────────
+
+def run_hn_experiments(base_args, results_dir: str):
+    """
+    Compare training with different hard negative top_k values:
+        top_k=0 — no hard negatives (identical to standard training)
+        top_k=1 — 1 hard negative per anchor added to the loss each step
+        top_k=3 — 3 hard negatives per anchor added to the loss each step
+        top_k=5 — 5 hard negatives per anchor added to the loss each step
+
+    With top_k > 0, the loss similarity matrix grows from [B, B] to [B, B+k].
+    Each anchor must rank its k hard negatives lower than its true positive.
+    Hard negatives are re-mined every hn_refresh_every epochs using current
+    model weights, so the difficulty adapts as training progresses.
+
+    Saves individual training curves per config + one comparison plot at:
+        results/hn_experiments/hn_comparison.png
+        results/hn_experiments/hn_summary.json
+    """
+
+    hn_configs = [
+        {"label": "no_hn",   "top_k": 0, "color": "#95a5a6"},
+        {"label": "hn_k=1",  "top_k": 1, "color": "#e74c3c"},
+        {"label": "hn_k=3",  "top_k": 3, "color": "#3498db"},
+        {"label": "hn_k=5",  "top_k": 5, "color": "#2ecc71"},
+    ]
+
+    os.makedirs(results_dir, exist_ok=True)
+    all_experiments = []
+
+    for cfg in hn_configs:
+        print(f"\n{'='*65}")
+        print(f"  HN EXPERIMENT: {cfg['label']}  (top_k={cfg['top_k']})")
+        print(f"{'='*65}")
+
+        exp_args = copy.deepcopy(base_args)
+        exp_args.hard_negatives   = cfg["top_k"] > 0
+        exp_args.hn_top_k         = cfg["top_k"]
+        exp_args.experiment_label = cfg["label"]
+
+        safe_label          = cfg["label"].replace("=", "_")
+        exp_args.output_dir = os.path.join(
+            os.path.dirname(results_dir), "models", "hn_experiments", safe_label
+        )
+        exp_args.plot_dir   = os.path.join(results_dir, "hn_experiments", safe_label)
+
+        train(exp_args)
+
+        config_path = os.path.join(exp_args.output_dir, "config.json")
+        with open(config_path) as f:
+            saved = json.load(f)
+
+        all_experiments.append({
+            "label":   cfg["label"],
+            "history": saved["history"],
+            "color":   cfg["color"],
+        })
+
+    # generate comparison plot
+    plots_root = os.path.join(results_dir, "hn_experiments")
+    os.makedirs(plots_root, exist_ok=True)
+    plot_hn_experiment_comparison(all_experiments, plots_root)
+
+    # print summary table
+    print(f"\n{'='*65}")
+    print("  HN EXPERIMENT SUMMARY")
+    print(f"{'='*65}")
+    print(f"  {'Config':<12} | {'Best Val Acc':>12} | {'Best Epoch':>10} | {'Final Val Loss':>14}")
+    print("  " + "─" * 55)
+
+    for exp in all_experiments:
+        history = exp["history"]
+        has_val = "val_loss" in history[0]
+        if has_val:
+            best_acc   = max(h["val_accuracy"] for h in history) * 100
+            best_epoch = max(range(len(history)), key=lambda i: history[i]["val_accuracy"]) + 1
+            final_loss = history[-1]["val_loss"]
+        else:
+            best_acc   = max(h["accuracy"] for h in history) * 100
+            best_epoch = max(range(len(history)), key=lambda i: history[i]["accuracy"]) + 1
+            final_loss = history[-1]["loss"]
+        print(f"  {exp['label']:<12} | {best_acc:>11.1f}% | {best_epoch:>10} | {final_loss:>14.4f}")
+
+    summary_path = os.path.join(plots_root, "hn_summary.json")
+    with open(summary_path, "w") as f:
+        json.dump(all_experiments, f, indent=2)
+
+    print(f"\n  Summary → {summary_path}")
+    return all_experiments
+
+
 # ── Entry Point ────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train MiniIntentEmbedder")
 
+    # ── core training args ─────────────────────────────────────
     parser.add_argument("--epochs",           type=int,   default=15)
     parser.add_argument("--batch-size",       type=int,   default=20,
                         help="Auto-overridden to n_intents after data load")
@@ -792,13 +1113,30 @@ if __name__ == "__main__":
     parser.add_argument("--output-dir",       type=str,   default="../models/finetuned")
     parser.add_argument("--results-dir",      type=str,   default="../results")
     parser.add_argument("--seed",             type=int,   default=42)
-    parser.add_argument("--experiments",      action="store_true",
+
+    # ── experiment runners ─────────────────────────────────────
+    parser.add_argument("--experiments",    action="store_true",
                         help="Run temperature comparison experiments")
+    parser.add_argument("--hn-experiments", action="store_true",
+                        help="Run top_k hard negative comparison (0, 1, 3, 5)")
+
+    # ── hard negative mining args ──────────────────────────────
+    parser.add_argument("--hard-negatives",   action="store_true",
+                        help="Enable offline hard negative mining during training")
+    parser.add_argument("--hn-top-k",         type=int, default=1,
+                        help="Hard negatives per anchor added to loss (default: 1)")
+    parser.add_argument("--hn-start-epoch",   type=int, default=4,
+                        help="Epoch to start mining hard negatives (default: 4)")
+    parser.add_argument("--hn-refresh-every", type=int, default=3,
+                        help="Re-mine hard negatives every N epochs (default: 3)")
 
     args = parser.parse_args()
 
-    if args.experiments:
-        # run all temperature experiments and compare
+    if args.hn_experiments:
+        # compare top_k = 0, 1, 3, 5 hard negatives
+        run_hn_experiments(args, args.results_dir)
+    elif args.experiments:
+        # run temperature comparison experiments
         run_experiments(args, args.results_dir)
     else:
         # single training run
