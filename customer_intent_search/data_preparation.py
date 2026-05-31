@@ -75,6 +75,7 @@ def create_training_pairs(
     intent_groups: Dict,
     pairs_per_intent: int = 20,
     seed: int = 42,
+    verbose: bool = True,
 ) -> Tuple[List[InputExample], List[int]]:
     """
     Create positive training pairs for contrastive learning.
@@ -122,8 +123,9 @@ def create_training_pairs(
                 # store intent label alongside the pair
                 all_intent_ids.append(intent_id)
 
-    print(f"  Created {len(all_pairs):,} training pairs "
-          f"across {len(intent_groups)} intents")
+    if verbose:
+        print(f"  Created {len(all_pairs):,} training pairs "
+              f"across {len(intent_groups)} intents")
 
     return all_pairs, all_intent_ids
 

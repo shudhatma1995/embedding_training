@@ -263,7 +263,8 @@ def evaluate_val(
     val_pairs, val_intent_ids = create_training_pairs(
         val_data,
         pairs_per_intent=pairs_per_intent,
-        seed=seed + 1,   # different seed from training pairs
+        seed=seed + 1,
+        verbose=False,
     )
 
     # build val dataloader — same structure as training
@@ -808,18 +809,15 @@ def train(args) -> tuple:
     model = model.to(device)
     print(f"  Parameters: {model.n_parameters():,}")
 
-    # ── Step 4: Training pairs + Dataset ───────────────────────
-    print("\nCreating training pairs...")
-    pairs, intent_ids = create_training_pairs(
-        train_data,
-        pairs_per_intent=args.pairs_per_intent,
-        seed=args.seed,
-    )
-
-    dataset           = PairDataset(pairs, intent_ids)
-    batches_per_epoch = len(pairs) // args.batch_size
-
-    print(f"  Pairs         : {len(pairs):,}")
+    # ── Step 4: Dynamic pairing config ────────────────────────
+    # Pairs are re-created at the start of every epoch with a new random seed.
+    # This means queries are paired differently each epoch — the model sees
+    # (q7, q3) in epoch 1, (q7, q41) in epoch 2, (q7, q28) in epoch 3, etc.
+    # With 50 queries per intent and pairs_per_intent=25, every query appears
+    # in training. Static pairing would repeat the same 3,000 pairs every epoch.
+    batches_per_epoch = (args.pairs_per_intent * n_intents) // args.batch_size
+    print(f"\n  Pairs/epoch   : {args.pairs_per_intent * n_intents:,}  "
+          f"(dynamic — re-shuffled each epoch)")
     print(f"  Batches/epoch : {batches_per_epoch}")
 
     # ── Step 5: Optimizer + scheduler + loss ───────────────────
@@ -847,6 +845,16 @@ def train(args) -> tuple:
     history = []
 
     for epoch in range(1, args.epochs + 1):
+
+        # re-create pairs with a fresh shuffle each epoch (dynamic pairing)
+        # seed=args.seed + epoch gives a unique but reproducible shuffle per epoch
+        pairs, intent_ids = create_training_pairs(
+            train_data,
+            pairs_per_intent=args.pairs_per_intent,
+            seed=args.seed + epoch,
+            verbose=(epoch == 1),   # print once; suppress for remaining epochs
+        )
+        dataset = PairDataset(pairs, intent_ids)
 
         # mine hard negatives at configured intervals (after warm-up)
         if use_hn and epoch >= hn_start and (epoch - hn_start) % hn_refresh == 0:
@@ -1106,7 +1114,8 @@ if __name__ == "__main__":
     parser.add_argument("--epochs",           type=int,   default=15)
     parser.add_argument("--batch-size",       type=int,   default=20,
                         help="Auto-overridden to n_intents after data load")
-    parser.add_argument("--pairs-per-intent", type=int,   default=20)
+    parser.add_argument("--pairs-per-intent", type=int,   default=25,
+                        help="Pairs sampled per intent per epoch (max = n_queries // 2)")
     parser.add_argument("--lr",               type=float, default=3e-4)
     parser.add_argument("--temperature",      type=float, default=0.05)
     parser.add_argument("--warmup-steps",     type=int,   default=50)
