@@ -1735,21 +1735,6 @@ python train.py --hn-experiments --epochs 20 --results-dir ../results
 
 ### Results
 
-#### Synthetic dataset (20 intents — convergence speed comparison)
-
-All configs eventually hit 100% on the small synthetic dataset, but hard negatives accelerate convergence significantly:
-
-| Config | Best Val Acc | Best Epoch | Final Val Loss | vs. Baseline |
-|--------|-------------|------------|----------------|-------------|
-| No HN (baseline) | 100.0% | 12 | 0.0006 | — |
-| top_k=1 | 100.0% | 10 | 0.0001 | **−2 epochs** |
-| top_k=3 | 100.0% | 10 | 0.0001 | **−2 epochs** |
-| top_k=5 | 100.0% | **9** | 0.0000 | **−3 epochs** |
-
-Hard negatives get the model to peak accuracy 2–3 epochs sooner, and drive val loss an order of magnitude lower (0.0006 → 0.0000).
-
-#### CLINC-150 dataset (150 intents — where the real improvement matters)
-
 The CLINC-150 training log showed a plateau at ~59% val accuracy that hard negatives are designed to break:
 
 ```
@@ -1759,9 +1744,16 @@ Standard training (no HN):
   Epoch 15 | val_acc 59.4%   ← final (flat for 5 epochs)
 ```
 
-On 150 intents, the easy in-batch negatives saturate early and training stalls. Hard negatives expose the confusable intent pairs (e.g. `cancel_order` vs `modify_order`) that require the model to learn finer semantic distinctions. The expected improvement on CLINC-150 is +10–20pp Recall@1.
+Run the experiments and fill in the table below:
 
-> To reproduce the CLINC-150 results, run `python train.py --hn-experiments --epochs 20` in an environment with HuggingFace Hub access.
+| Config | Best Val Acc | Best Epoch | Final Val Loss |
+|--------|-------------|------------|----------------|
+| No HN (baseline) | 59.5% | 14 | 2.04 |
+| top_k=1 | — | — | — |
+| top_k=3 | — | — | — |
+| top_k=5 | — | — | — |
+
+**Comparison chart:** `results/hn_experiments/hn_comparison.png`
 
 **Comparison chart:** `results/hn_experiments/hn_comparison.png`
 
