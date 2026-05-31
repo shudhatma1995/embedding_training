@@ -34,6 +34,13 @@ This repo is built **step by step**. You can clone it, follow each step in order
   - [Three baselines to compare](#three-baselines-to-compare)
   - [TF-IDF deep dive](#tf-idf-deep-dive)
   - [Why the embedding model beats TF-IDF](#why-the-embedding-model-beats-tf-idf)
+- [Step 8 — Hard Negative Mining](#step-8--hard-negative-mining)
+  - [Why easy negatives cause a plateau](#why-easy-negatives-cause-a-plateau)
+  - [What is a hard negative](#what-is-a-hard-negative)
+  - [Mining algorithm](#mining-algorithm)
+  - [Modified loss](#modified-loss)
+  - [Running experiments](#running-experiments)
+  - [Results](#results)
 - [Dependencies](#dependencies)
 
 ---
@@ -213,7 +220,8 @@ Work through the steps below in order. Each step introduces one component, with 
 | 4 | `MiniIntentEmbedder` — full model | Done |
 | 5 | Data preparation — dataset loading, training pairs, batch sampler | Done |
 | 6 | Training — contrastive loss, custom DataLoader, LR schedule | Done |
-| 7 | Evaluation — Recall@1/5, MRR, TF-IDF baseline comparison | In progress |
+| 7 | Evaluation — Recall@1/5, MRR, TF-IDF baseline comparison | Done |
+| 8 | Hard negative mining — offline mining, modified loss, top_k sweep | Next |
 
 ---
 
@@ -1633,6 +1641,121 @@ cosine similarity: 0.00  ✗
 The key insight: **TF-IDF compares surface form. Embeddings compare learned meaning.**
 
 That is the entire value proposition of training a model. The evaluation in `evaluate.py` will put a number on exactly how large this gap is on our 150-intent test set.
+
+---
+
+---
+
+## Step 8 — Hard Negative Mining
+
+**Goal:** Break through the ~59% validation accuracy plateau by training on hard negatives — queries from the wrong intent that the current model finds confusable.
+
+**Key files:**
+- `customer_intent_search/train.py` — `mine_hard_negatives()`, updated `MultipleNegativesRankingLoss`, updated `train()`
+
+### Why easy negatives cause a plateau
+
+With 150 intents per batch, the 149 off-diagonal entries in the `MultipleNegativesRankingLoss` similarity matrix are mostly *easy* negatives — `track_order` vs `reset_password` are clearly different, and the model separates them within the first few epochs. After that, those pairs contribute almost no gradient signal.
+
+**Training log evidence (standard training):**
+```
+Epoch 08 | train_loss 1.37 | train_acc 61.6% | val_acc 52.9%
+Epoch 10 | train_loss 0.95 | train_acc 73.2% | val_acc 55.3%   ← plateau starts
+Epoch 13 | train_loss 0.66 | train_acc 81.2% | val_acc 58.7%   ← barely moving
+Epoch 15 | train_loss 0.55 | train_acc 85.5% | val_acc 59.4%   ← flat
+```
+
+The model overfits to easy in-batch negatives while failing to learn the harder distinctions between semantically similar intents (e.g. `cancel_order` vs `modify_order`).
+
+### What is a hard negative
+
+A hard negative is a query from the **wrong** intent that the current model's embeddings score as highly similar to the anchor:
+
+```
+anchor:         "I need to cancel my subscription"    → intent: cancel_order
+                               ↓ model confuses these
+hard negative:  "can I change the plan on my account" → intent: modify_order
+true positive:  "please cancel order #ORD-5678"       → intent: cancel_order
+```
+
+Training the model to push these apart forces it to learn the subtle semantic boundaries that distinguish confusable intents.
+
+### Mining algorithm
+
+Mining runs after a warm-up period (once the model has learned something) and repeats every few epochs as the model improves:
+
+```
+1. embed all 7,500 training queries  →  matrix [7500, 128]  (L2-normalised)
+2. cosine similarity matrix          →  [7500, 7500]
+3. for each query i:
+       mask same-intent entries (score = -2.0)
+       take top-K highest-similarity entries from different intents
+       → add to that intent's hard-negative pool
+4. repeat every hn_refresh_every epochs (default: 3)
+```
+
+The pool of hard negatives *changes each round* — as the model improves, previously hard pairs become easy and new confusable pairs emerge.
+
+### Modified loss
+
+The existing `MultipleNegativesRankingLoss` operates on a `[B, B]` similarity matrix. Hard negatives are appended per-anchor using a batched matrix multiply:
+
+```
+standard:                sim = A @ P.T              →  [B, B]    labels = [0, 1, …, B-1]
+with top_k hard negs:    hn  = bmm(A, HN.T)        →  [B, k]
+                         sim = concat([A@P.T, hn])  →  [B, B+k]  labels unchanged
+```
+
+- `HN` has shape `[B*k, D]` — k hard negatives per anchor, stacked
+- `bmm` computes each anchor's similarity against only its *own* k hard negatives (no cross-contamination between anchors)
+- The correct class label is still the diagonal — the model must rank column `i` highest in row `i`, and rank all k appended hard neg columns lower
+
+### Running experiments
+
+```bash
+cd customer_intent_search
+
+# single run with hard negatives (top_k=1, mining starts epoch 4, refreshes every 3)
+python train.py --hard-negatives --hn-top-k 1 --epochs 20 \
+    --output-dir ../models/finetuned_hn
+
+# compare top_k = 0 (baseline), 1, 3, 5 — saves plots to results/hn_experiments/
+python train.py --hn-experiments --epochs 20 --results-dir ../results
+```
+
+**All hard negative flags:**
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--hard-negatives` | off | Enable offline hard negative mining |
+| `--hn-top-k` | 1 | Hard negatives per anchor added to loss |
+| `--hn-start-epoch` | 4 | Epoch to begin mining (warm-up first) |
+| `--hn-refresh-every` | 3 | Re-mine every N epochs |
+| `--hn-experiments` | off | Run full top_k comparison sweep |
+
+### Results
+
+The CLINC-150 training log showed a plateau at ~59% val accuracy that hard negatives are designed to break:
+
+```
+Standard training (no HN):
+  Epoch 08 | val_acc 52.9%
+  Epoch 10 | val_acc 55.3%   ← plateau starts
+  Epoch 15 | val_acc 59.4%   ← final (flat for 5 epochs)
+```
+
+Run the experiments and fill in the table below:
+
+| Config | Best Val Acc | Best Epoch | Final Val Loss |
+|--------|-------------|------------|----------------|
+| No HN (baseline) | 59.5% | 14 | 2.04 |
+| top_k=1 | — | — | — |
+| top_k=3 | — | — | — |
+| top_k=5 | — | — | — |
+
+**Comparison chart:** `results/hn_experiments/hn_comparison.png`
+
+**Comparison chart:** `results/hn_experiments/hn_comparison.png`
 
 ---
 
