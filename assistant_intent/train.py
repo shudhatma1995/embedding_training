@@ -109,16 +109,24 @@ def iter_batches(A, P, I, rng: random.Random):
 
 
 # ── loss ─────────────────────────────────────────────────────────────────────
-def mnr_loss(anchor_emb: torch.Tensor, pos_emb: torch.Tensor, temperature: float):
+def mnr_loss(anchor_emb: torch.Tensor, pos_emb: torch.Tensor, temperature: float,
+             neg_emb: torch.Tensor = None):
     """
     Multiple-Negatives-Ranking / InfoNCE.
         S = (A @ Pᵀ) / τ          # [B,B]; row i = anchor i vs every positive
         target_i = i              # the diagonal is the correct match
         loss = cross_entropy(S, targets)
     Low τ sharpens the distribution (harder signal); high τ softens it.
+
+    none-as-negatives (neg_emb [k,D]): append k SHARED junk negatives as extra
+    columns → S grows [B,B] → [B,B+k]. Targets are unchanged (still the diagonal),
+    so every real anchor must rank its positive above all other intents AND above
+    every `none` example. This pushes junk AWAY from all prototypes.
     """
-    sim = (anchor_emb @ pos_emb.T) / temperature
-    labels = torch.arange(sim.shape[0], device=sim.device)
+    sim = (anchor_emb @ pos_emb.T) / temperature          # [B,B]
+    if neg_emb is not None and len(neg_emb):
+        sim = torch.cat([sim, (anchor_emb @ neg_emb.T) / temperature], dim=1)  # [B,B+k]
+    labels = torch.arange(anchor_emb.shape[0], device=sim.device)
     return F.cross_entropy(sim, labels)
 
 
@@ -181,10 +189,24 @@ def train(args):
     for it in TRAIN_INTENTS:
         print(f"    {it:<13} {len(train_groups[it]):>4} train | {len(test_groups[it]):>3} test")
 
-    # tokenizer fit on training texts only
-    all_texts = [t for qs in train_groups.values() for t in qs]
-    tok = SimpleTokenizer(max_vocab_size=8000, max_seq_len=32).fit(all_texts)
-    print(f"\n  Vocab size : {tok.vocab_size}")
+    # `none` enters training via TWO independent switches (so we can ablate them):
+    #   --none-in-vocab : put junk words in the tokenizer vocab (vs [UNK])
+    #   --none-neg-k    : use junk as shared negatives in the loss
+    # Negatives are meaningless if their words aren't in vocab, so k>0 forces in-vocab.
+    none_in_vocab = args.none_in_vocab or args.none_neg_k > 0
+    none_pool = []
+    if none_in_vocab:
+        none_pool = load_grouped(os.path.join(DATA_DIR, "train.json"), ["none"])["none"]
+
+    # tokenizer fit on training texts (+ none pool iff none_in_vocab)
+    fit_texts = [t for qs in train_groups.values() for t in qs]
+    if none_in_vocab:
+        fit_texts = fit_texts + none_pool
+    tok = SimpleTokenizer(max_vocab_size=8000, max_seq_len=32).fit(fit_texts)
+    print(f"\n  none in vocab : {none_in_vocab}  ({len(none_pool)} junk examples in fit)")
+    if args.none_neg_k > 0:
+        print(f"  none negatives: k={args.none_neg_k} per batch")
+    print(f"  Vocab size    : {tok.vocab_size}")
 
     model = build_model(tok).to(device)
     print(f"  Parameters : {model.n_parameters():,}")
@@ -216,7 +238,15 @@ def train(args):
 
             ae = model(aid, am)
             pe = model(pid, pm)
-            loss = mnr_loss(ae, pe, args.temperature)
+
+            # sample k shared `none` negatives for this batch (if enabled)
+            neg_emb = None
+            if args.none_neg_k > 0:
+                neg_texts = [rng.choice(none_pool) for _ in range(args.none_neg_k)]
+                nid, nm = tok.encode_batch(neg_texts)
+                neg_emb = model(nid.to(device), nm.to(device))
+
+            loss = mnr_loss(ae, pe, args.temperature, neg_emb)
 
             optimizer.zero_grad()
             loss.backward()
@@ -260,6 +290,8 @@ def train(args):
             "pairs_per_intent": args.pairs_per_intent,
             "lr": args.lr,
             "temperature": args.temperature,
+            "none_neg_k": args.none_neg_k,
+            "none_in_vocab": none_in_vocab,
             "vocab_size": tok.vocab_size,
             "r1_random_init": r1_before,
             "history": history,
@@ -279,6 +311,10 @@ def main():
     ap.add_argument("--lr", type=float, default=3e-4)
     ap.add_argument("--temperature", type=float, default=0.05)
     ap.add_argument("--warmup-steps", type=int, default=30)
+    ap.add_argument("--none-neg-k", type=int, default=0,
+                    help="shared `none` negatives appended per batch (0 = off)")
+    ap.add_argument("--none-in-vocab", action="store_true",
+                    help="fit tokenizer on the none pool too (junk words in-vocab vs [UNK])")
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--output-dir", type=str,
                     default=os.path.join(HERE, "models", "finetuned"))
