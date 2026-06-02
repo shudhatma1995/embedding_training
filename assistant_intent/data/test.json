@@ -1,0 +1,486 @@
+[
+  {
+    "text": "tell me the capital of chile",
+    "intent": "answers"
+  },
+  {
+    "text": "tell me the capital of norway",
+    "intent": "answers"
+  },
+  {
+    "text": "tell me the capital of india",
+    "intent": "answers"
+  },
+  {
+    "text": "tell me the capital of italy",
+    "intent": "answers"
+  },
+  {
+    "text": "what year did the first moon landing happen",
+    "intent": "answers"
+  },
+  {
+    "text": "what year did world war two end",
+    "intent": "answers"
+  },
+  {
+    "text": "what year did the titanic sink",
+    "intent": "answers"
+  },
+  {
+    "text": "what's the size of the sahara",
+    "intent": "answers"
+  },
+  {
+    "text": "what's the size of the grand canyon",
+    "intent": "answers"
+  },
+  {
+    "text": "what's the height of the grand canyon",
+    "intent": "answers"
+  },
+  {
+    "text": "what's the height of the sahara",
+    "intent": "answers"
+  },
+  {
+    "text": "how do i say hello in italian",
+    "intent": "answers"
+  },
+  {
+    "text": "how do i say goodbye in german",
+    "intent": "answers"
+  },
+  {
+    "text": "how do i say hello in spanish",
+    "intent": "answers"
+  },
+  {
+    "text": "how do i say goodbye in spanish",
+    "intent": "answers"
+  },
+  {
+    "text": "how do i say hello in japanese",
+    "intent": "answers"
+  },
+  {
+    "text": "how do i say please in german",
+    "intent": "answers"
+  },
+  {
+    "text": "how do i say water in spanish",
+    "intent": "answers"
+  },
+  {
+    "text": "how do i say please in hindi",
+    "intent": "answers"
+  },
+  {
+    "text": "how do i say thank you in spanish",
+    "intent": "answers"
+  },
+  {
+    "text": "how do i say water in french",
+    "intent": "answers"
+  },
+  {
+    "text": "i want to listen to reggae",
+    "intent": "media"
+  },
+  {
+    "text": "i want to listen to blues",
+    "intent": "media"
+  },
+  {
+    "text": "i want to listen to k-pop",
+    "intent": "media"
+  },
+  {
+    "text": "i want to listen to ambient music",
+    "intent": "media"
+  },
+  {
+    "text": "can you play ed sheeran on apple music",
+    "intent": "media"
+  },
+  {
+    "text": "can you play the weeknd on apple music",
+    "intent": "media"
+  },
+  {
+    "text": "can you play bad bunny on soundcloud",
+    "intent": "media"
+  },
+  {
+    "text": "can you play sza on apple music",
+    "intent": "media"
+  },
+  {
+    "text": "can you play the weeknd",
+    "intent": "media"
+  },
+  {
+    "text": "can you play ed sheeran",
+    "intent": "media"
+  },
+  {
+    "text": "can you play the weeknd on spotify",
+    "intent": "media"
+  },
+  {
+    "text": "can you play ed sheeran on spotify",
+    "intent": "media"
+  },
+  {
+    "text": "can you play sza on spotify",
+    "intent": "media"
+  },
+  {
+    "text": "can you play sza on soundcloud",
+    "intent": "media"
+  },
+  {
+    "text": "go to the next track",
+    "intent": "media"
+  },
+  {
+    "text": "go to the previous song",
+    "intent": "media"
+  },
+  {
+    "text": "go to the previous track",
+    "intent": "media"
+  },
+  {
+    "text": "go to the next song",
+    "intent": "media"
+  },
+  {
+    "text": "turn it down",
+    "intent": "media"
+  },
+  {
+    "text": "can you turn off the porch lights",
+    "intent": "smart_home"
+  },
+  {
+    "text": "can you turn off the basement lights",
+    "intent": "smart_home"
+  },
+  {
+    "text": "can you turn on the nursery light",
+    "intent": "smart_home"
+  },
+  {
+    "text": "can you turn on the porch ceiling light",
+    "intent": "smart_home"
+  },
+  {
+    "text": "can you turn off the nursery lamp",
+    "intent": "smart_home"
+  },
+  {
+    "text": "can you turn off the study light",
+    "intent": "smart_home"
+  },
+  {
+    "text": "can you turn on the porch lights",
+    "intent": "smart_home"
+  },
+  {
+    "text": "can you turn on the basement lights",
+    "intent": "smart_home"
+  },
+  {
+    "text": "can you turn on the basement light",
+    "intent": "smart_home"
+  },
+  {
+    "text": "dim the ceiling light in the study",
+    "intent": "smart_home"
+  },
+  {
+    "text": "dim the light in the nursery",
+    "intent": "smart_home"
+  },
+  {
+    "text": "brighten the lights in the nursery",
+    "intent": "smart_home"
+  },
+  {
+    "text": "dim the ceiling light in the basement",
+    "intent": "smart_home"
+  },
+  {
+    "text": "dim the lights in the study",
+    "intent": "smart_home"
+  },
+  {
+    "text": "dim the lamp in the basement",
+    "intent": "smart_home"
+  },
+  {
+    "text": "dim the lamp in the nursery",
+    "intent": "smart_home"
+  },
+  {
+    "text": "brighten the lamp in the basement",
+    "intent": "smart_home"
+  },
+  {
+    "text": "brighten the light in the basement",
+    "intent": "smart_home"
+  },
+  {
+    "text": "brighten the lamp in the study",
+    "intent": "smart_home"
+  },
+  {
+    "text": "i want the basement light off",
+    "intent": "smart_home"
+  },
+  {
+    "text": "i want the porch lamp off",
+    "intent": "smart_home"
+  },
+  {
+    "text": "i want the nursery lights off",
+    "intent": "smart_home"
+  },
+  {
+    "text": "i want the study ceiling light off",
+    "intent": "smart_home"
+  },
+  {
+    "text": "i want the nursery light off",
+    "intent": "smart_home"
+  },
+  {
+    "text": "i want the basement lamp on",
+    "intent": "smart_home"
+  },
+  {
+    "text": "i want the porch ceiling light off",
+    "intent": "smart_home"
+  },
+  {
+    "text": "i want the nursery lamp off",
+    "intent": "smart_home"
+  },
+  {
+    "text": "i want the porch lights off",
+    "intent": "smart_home"
+  },
+  {
+    "text": "i want the study lamp off",
+    "intent": "smart_home"
+  },
+  {
+    "text": "set up a call with dr patel at 3",
+    "intent": "productivity"
+  },
+  {
+    "text": "set up a meeting with priya at 3",
+    "intent": "productivity"
+  },
+  {
+    "text": "set up a meeting with mike next week",
+    "intent": "productivity"
+  },
+  {
+    "text": "set up a meeting with mike on friday",
+    "intent": "productivity"
+  },
+  {
+    "text": "set up a meeting with dr patel this afternoon",
+    "intent": "productivity"
+  },
+  {
+    "text": "set up a meeting with priya at 4pm",
+    "intent": "productivity"
+  },
+  {
+    "text": "set up a meeting with grandma at 4pm",
+    "intent": "productivity"
+  },
+  {
+    "text": "set up a meeting with grandma tomorrow",
+    "intent": "productivity"
+  },
+  {
+    "text": "set up a call with grandma on saturday",
+    "intent": "productivity"
+  },
+  {
+    "text": "set up a call with mike on saturday",
+    "intent": "productivity"
+  },
+  {
+    "text": "do i have anything tomorrow",
+    "intent": "productivity"
+  },
+  {
+    "text": "do i have anything today",
+    "intent": "productivity"
+  },
+  {
+    "text": "write an email to dr patel",
+    "intent": "productivity"
+  },
+  {
+    "text": "write an email to grandma",
+    "intent": "productivity"
+  },
+  {
+    "text": "write an email to priya",
+    "intent": "productivity"
+  },
+  {
+    "text": "write an email to mike",
+    "intent": "productivity"
+  },
+  {
+    "text": "any new emails from dr patel",
+    "intent": "productivity"
+  },
+  {
+    "text": "any new emails from grandma",
+    "intent": "productivity"
+  },
+  {
+    "text": "any new emails from priya",
+    "intent": "productivity"
+  },
+  {
+    "text": "any new emails from mike",
+    "intent": "productivity"
+  },
+  {
+    "text": "set a reminder to pick up groceries",
+    "intent": "productivity"
+  },
+  {
+    "text": "set a reminder to take out the trash",
+    "intent": "productivity"
+  },
+  {
+    "text": "set a reminder to send the invoice",
+    "intent": "productivity"
+  },
+  {
+    "text": "set a reminder to water the plants",
+    "intent": "productivity"
+  },
+  {
+    "text": "set a reminder to feed the cat",
+    "intent": "productivity"
+  },
+  {
+    "text": "set a reminder to book the venue",
+    "intent": "productivity"
+  },
+  {
+    "text": "set a reminder to renew my passport",
+    "intent": "productivity"
+  },
+  {
+    "text": "set a reminder to call the bank",
+    "intent": "productivity"
+  },
+  {
+    "text": "i need a rideshare to the airport",
+    "intent": "none"
+  },
+  {
+    "text": "i need a cab to the airport",
+    "intent": "none"
+  },
+  {
+    "text": "order a sandwich for delivery",
+    "intent": "none"
+  },
+  {
+    "text": "order ramen for delivery",
+    "intent": "none"
+  },
+  {
+    "text": "start a timer for 10 minutes",
+    "intent": "none"
+  },
+  {
+    "text": "start a stopwatch for 30 minutes",
+    "intent": "none"
+  },
+  {
+    "text": "start a timer for 30 minutes",
+    "intent": "none"
+  },
+  {
+    "text": "start a timer for 20 minutes",
+    "intent": "none"
+  },
+  {
+    "text": "start a timer for 15 minutes",
+    "intent": "none"
+  },
+  {
+    "text": "start a stopwatch for 5 minutes",
+    "intent": "none"
+  },
+  {
+    "text": "start a stopwatch for 15 minutes",
+    "intent": "none"
+  },
+  {
+    "text": "start a stopwatch for 10 minutes",
+    "intent": "none"
+  },
+  {
+    "text": "start a timer for 5 minutes",
+    "intent": "none"
+  },
+  {
+    "text": "start a stopwatch for 20 minutes",
+    "intent": "none"
+  },
+  {
+    "text": "translate this page into french",
+    "intent": "none"
+  },
+  {
+    "text": "translate this document into italian",
+    "intent": "none"
+  },
+  {
+    "text": "translate this document into german",
+    "intent": "none"
+  },
+  {
+    "text": "translate this document into spanish",
+    "intent": "none"
+  },
+  {
+    "text": "translate this page into hindi",
+    "intent": "none"
+  },
+  {
+    "text": "translate this document into japanese",
+    "intent": "none"
+  },
+  {
+    "text": "translate this document into hindi",
+    "intent": "none"
+  },
+  {
+    "text": "translate this page into german",
+    "intent": "none"
+  },
+  {
+    "text": "translate this page into japanese",
+    "intent": "none"
+  },
+  {
+    "text": "translate this page into mandarin",
+    "intent": "none"
+  }
+]
