@@ -39,6 +39,8 @@ sys.path.insert(0, _CIS)
 from tokenizer import SimpleTokenizer   # noqa: E402
 from model import build_model           # noqa: E402
 
+from protos import build_prototypes     # noqa: E402  (shared centroid kernel)
+
 HERE = os.path.dirname(__file__)
 DATA_DIR = os.path.join(HERE, "data")
 REAL_INTENTS = ["answers", "media", "smart_home", "productivity"]
@@ -68,15 +70,7 @@ def load_model(model_dir: str, device: str):
 
 
 # ── prototypes ───────────────────────────────────────────────────────────────
-def build_prototypes(model, tok, train_groups, device):
-    """prototype[intent] = L2-normalized MEAN of that intent's train embeddings."""
-    intents = list(train_groups.keys())
-    protos = []
-    for it in intents:
-        e = model.encode(train_groups[it], tok, device=device)   # [n,D], L2-normed
-        m = e.mean(axis=0)
-        protos.append(m / (np.linalg.norm(m) + 1e-9))
-    return np.stack(protos), intents                             # [C,D], [C]
+# build_prototypes now lives in protos.py (shared with train.py) — imported above.
 
 
 # ── PART A: retrieval metrics ────────────────────────────────────────────────

@@ -52,6 +52,8 @@ sys.path.insert(0, _CIS)
 from tokenizer import SimpleTokenizer   # noqa: E402
 from model import build_model           # noqa: E402
 
+from protos import build_prototypes     # noqa: E402  (shared centroid kernel)
+
 HERE = os.path.dirname(__file__)
 DATA_DIR = os.path.join(HERE, "data")
 
@@ -142,14 +144,7 @@ def proto_recall1(model, tok, train_groups, test_groups, device) -> float:
     unseen entities, so this number reflects pattern-learning, not memorization.
     """
     model.eval()
-    intents = list(train_groups.keys())
-    protos = []
-    for it in intents:
-        e = model.encode(train_groups[it], tok, device=device)   # [n,D], already L2-normed
-        m = e.mean(axis=0)
-        m = m / (np.linalg.norm(m) + 1e-9)
-        protos.append(m)
-    protos = np.stack(protos)                                    # [C,D]
+    protos, intents = build_prototypes(model, tok, train_groups, device)  # [C,D], [C]
 
     correct = total = 0
     for ti, it in enumerate(intents):
