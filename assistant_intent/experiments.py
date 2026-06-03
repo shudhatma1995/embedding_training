@@ -96,9 +96,9 @@ def main():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     scratch = os.path.join(HERE, "models", "_ablation_tmp")
 
-    train_groups = ev.load_grouped(os.path.join(ev.DATA_DIR, "train.json"), ev.REAL_INTENTS)
-    test_groups = ev.load_grouped(os.path.join(ev.DATA_DIR, "test.json"), ev.REAL_INTENTS)
-    none_texts = ev.load_grouped(os.path.join(ev.DATA_DIR, "test.json"), ["none"])["none"]
+    train_groups = ev.load_by_intent(os.path.join(ev.DATA_DIR, "train.json"), ev.REAL_INTENTS)
+    test_groups = ev.load_by_intent(os.path.join(ev.DATA_DIR, "test.json"), ev.REAL_INTENTS)
+    none_texts = ev.load_by_intent(os.path.join(ev.DATA_DIR, "test.json"), ["none"])["none"]
 
     print("=" * 78)
     print(f"MULTI-SEED ABLATION  (seeds={args.seeds}, {len(args.seeds)} runs per config)")

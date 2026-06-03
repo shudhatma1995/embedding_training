@@ -51,7 +51,7 @@ sys.path.insert(0, _CIS)
 from tokenizer import SimpleTokenizer   # noqa: E402
 from model import build_model           # noqa: E402
 
-from shared import load_grouped, build_prototypes   # noqa: E402  (shared helpers)
+from shared import load_by_intent, build_prototypes   # noqa: E402  (shared helpers)
 
 HERE = os.path.dirname(__file__)
 DATA_DIR = os.path.join(HERE, "data")
@@ -223,8 +223,8 @@ def train(args):
     print(f"  Device: {device}")
 
     # data: 4 real intents only (none excluded — handled by threshold in Stage 5)
-    train_groups = load_grouped(os.path.join(DATA_DIR, "train.json"), TRAIN_INTENTS)
-    test_groups = load_grouped(os.path.join(DATA_DIR, "test.json"), TRAIN_INTENTS)
+    train_groups = load_by_intent(os.path.join(DATA_DIR, "train.json"), TRAIN_INTENTS)
+    test_groups = load_by_intent(os.path.join(DATA_DIR, "test.json"), TRAIN_INTENTS)
     n_intents = len(train_groups)
     print("\n  Train queries per intent:")
     for it in TRAIN_INTENTS:
@@ -237,7 +237,7 @@ def train(args):
     none_in_vocab = args.none_in_vocab or args.none_neg_k > 0
     none_pool = []
     if none_in_vocab:
-        none_pool = load_grouped(os.path.join(DATA_DIR, "train.json"), ["none"])["none"]
+        none_pool = load_by_intent(os.path.join(DATA_DIR, "train.json"), ["none"])["none"]
 
     # tokenizer fit on training texts (+ none pool iff none_in_vocab)
     fit_texts = [t for qs in train_groups.values() for t in qs]

@@ -38,7 +38,7 @@ sys.path.insert(0, _CIS)
 from tokenizer import SimpleTokenizer   # noqa: E402
 from model import build_model           # noqa: E402
 
-from shared import load_grouped, build_prototypes   # noqa: E402  (shared helpers)
+from shared import load_by_intent, build_prototypes   # noqa: E402  (shared helpers)
 
 HERE = os.path.dirname(__file__)
 DATA_DIR = os.path.join(HERE, "data")
@@ -150,9 +150,9 @@ def main():
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     model, tok = load_model(args.model_dir, device)
-    train_groups = load_grouped(os.path.join(DATA_DIR, "train.json"), REAL_INTENTS)
-    test_groups = load_grouped(os.path.join(DATA_DIR, "test.json"), REAL_INTENTS)
-    none_texts = load_grouped(os.path.join(DATA_DIR, "test.json"), ["none"])["none"]
+    train_groups = load_by_intent(os.path.join(DATA_DIR, "train.json"), REAL_INTENTS)
+    test_groups = load_by_intent(os.path.join(DATA_DIR, "test.json"), REAL_INTENTS)
+    none_texts = load_by_intent(os.path.join(DATA_DIR, "test.json"), ["none"])["none"]
 
     print("=" * 64)
     print("PART A — retrieval on the 4 REAL intents (nearest prototype)")

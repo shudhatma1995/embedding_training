@@ -3,7 +3,7 @@ shared.py  -  helpers used by BOTH train.py and evaluate.py.
 ================================================================================
 Two small things lived in duplicate before this module existed:
 
-  load_grouped     - read the {text,intent} json into {intent: [texts]}.
+  load_by_intent   - read the {text,intent} json into {intent: [texts]}.
                      train.py and evaluate.py each carried an identical copy.
   build_prototypes - the nearest-prototype kernel (encode → mean → L2-normalize).
                      train.py uses it to track test Recall@1 each epoch; evaluate.py
@@ -21,7 +21,7 @@ import json
 import numpy as np
 
 
-def load_grouped(path: str, keep: list) -> dict:
+def load_by_intent(path: str, keep: list) -> dict:
     """Load [{text,intent}] json → {intent: [texts]} for the kept intents.
     Keys follow `keep` order; an intent with no rows maps to an empty list."""
     with open(path) as f:
