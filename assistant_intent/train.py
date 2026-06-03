@@ -40,7 +40,6 @@ import random
 import argparse
 from collections import defaultdict
 
-import numpy as np
 import torch
 import torch.nn.functional as F
 
@@ -52,7 +51,7 @@ sys.path.insert(0, _CIS)
 from tokenizer import SimpleTokenizer   # noqa: E402
 from model import build_model           # noqa: E402
 
-from protos import build_prototypes     # noqa: E402  (shared centroid kernel)
+from shared import load_grouped, build_prototypes   # noqa: E402  (shared helpers)
 
 HERE = os.path.dirname(__file__)
 DATA_DIR = os.path.join(HERE, "data")
@@ -62,17 +61,6 @@ TRAIN_INTENTS = ["answers", "media", "smart_home", "productivity"]
 
 
 # ── data ─────────────────────────────────────────────────────────────────────
-def load_grouped(path: str, keep: list) -> dict:
-    """Load [{text,intent}] json → {intent: [texts]} for the kept intents (stable order)."""
-    with open(path) as f:
-        rows = json.load(f)
-    groups = defaultdict(list)
-    for r in rows:
-        if r["intent"] in keep:
-            groups[r["intent"]].append(r["text"])
-    return {k: groups[k] for k in keep}
-
-
 def make_pairs(groups: dict, pairs_per_intent: int, rng: random.Random):
     """
     One positive pair = two DIFFERENT utterances of the same intent.
@@ -170,6 +158,64 @@ def make_scheduler(optimizer, warmup_steps: int, total_steps: int):
 
 
 # ── training ─────────────────────────────────────────────────────────────────
+def embed(model, tok, texts, device):
+    """Tokenize `texts`, move to device, run the model forward.
+    Returns [len(texts), D] L2-normalized embeddings (grad-enabled — this is the
+    training forward, unlike model.encode which is the no-grad numpy path)."""
+    ids, mask = tok.encode_batch(texts)
+    return model(ids.to(device), mask.to(device))
+
+
+def run_epoch(model, tok, train_groups, none_pool, optimizer, scheduler,
+              pairs_per_intent, temperature, none_neg_k, rng, device):
+    """One training epoch: fresh pairs → one-pair-per-intent batches → step.
+    Returns (mean_loss, train_acc) for the epoch log."""
+    A, P, I = make_pairs(train_groups, pairs_per_intent, rng)   # dynamic each epoch
+    model.train()
+    tot_loss = correct = npairs = nbatch = 0
+    for anchors, positives in iter_batches(A, P, I, rng):
+        ae = embed(model, tok, anchors, device)
+        pe = embed(model, tok, positives, device)
+
+        # sample k shared `none` negatives for this batch (if enabled)
+        neg_emb = None
+        if none_neg_k > 0:
+            neg_texts = [rng.choice(none_pool) for _ in range(none_neg_k)]
+            neg_emb = embed(model, tok, neg_texts, device)
+
+        loss = mnr_loss(ae, pe, temperature, neg_emb)
+
+        optimizer.zero_grad()
+        loss.backward()
+        torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+        optimizer.step()
+        scheduler.step()
+
+        tot_loss += loss.item()
+        nbatch += 1
+        with torch.no_grad():
+            pred = (ae @ pe.T).argmax(dim=1)
+            labels = torch.arange(ae.shape[0], device=device)
+            correct += int((pred == labels).sum())
+            npairs += ae.shape[0]
+    return tot_loss / max(1, nbatch), correct / max(1, npairs)
+
+
+def save_artifacts(output_dir, model, tok, config):
+    """Write model.pt, tokenizer.json, config.json to output_dir; return their paths."""
+    os.makedirs(output_dir, exist_ok=True)
+    paths = {
+        "model": os.path.join(output_dir, "model.pt"),
+        "tokenizer": os.path.join(output_dir, "tokenizer.json"),
+        "config": os.path.join(output_dir, "config.json"),
+    }
+    torch.save(model.state_dict(), paths["model"])
+    tok.save(paths["tokenizer"])
+    with open(paths["config"], "w") as f:
+        json.dump(config, f, indent=2)
+    return paths
+
+
 def train(args):
     rng = random.Random(args.seed)
     torch.manual_seed(args.seed)
@@ -222,43 +268,10 @@ def train(args):
 
     history = []
     for epoch in range(1, args.epochs + 1):
-        A, P, I = make_pairs(train_groups, args.pairs_per_intent, rng)  # dynamic each epoch
-        model.train()
         t0 = time.time()
-        tot_loss = correct = npairs = nbatch = 0
-        for anchors, positives in iter_batches(A, P, I, rng):
-            aid, am = tok.encode_batch(anchors)
-            pid, pm = tok.encode_batch(positives)
-            aid, am, pid, pm = aid.to(device), am.to(device), pid.to(device), pm.to(device)
-
-            ae = model(aid, am)
-            pe = model(pid, pm)
-
-            # sample k shared `none` negatives for this batch (if enabled)
-            neg_emb = None
-            if args.none_neg_k > 0:
-                neg_texts = [rng.choice(none_pool) for _ in range(args.none_neg_k)]
-                nid, nm = tok.encode_batch(neg_texts)
-                neg_emb = model(nid.to(device), nm.to(device))
-
-            loss = mnr_loss(ae, pe, args.temperature, neg_emb)
-
-            optimizer.zero_grad()
-            loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
-            optimizer.step()
-            scheduler.step()
-
-            tot_loss += loss.item()
-            nbatch += 1
-            with torch.no_grad():
-                pred = (ae @ pe.T).argmax(dim=1)
-                labels = torch.arange(ae.shape[0], device=device)
-                correct += int((pred == labels).sum())
-                npairs += ae.shape[0]
-
-        train_loss = tot_loss / max(1, nbatch)
-        train_acc = correct / max(1, npairs)
+        train_loss, train_acc = run_epoch(
+            model, tok, train_groups, none_pool, optimizer, scheduler,
+            args.pairs_per_intent, args.temperature, args.none_neg_k, rng, device)
         test_r1 = proto_recall1(model, tok, train_groups, test_groups, device)
         history.append({"loss": train_loss, "train_acc": train_acc, "test_r1": test_r1})
         print(f"  {epoch:>5} | {train_loss:>7.4f} | {train_acc*100:>8.1f}% | "
@@ -270,31 +283,22 @@ def train(args):
           f"(random-init baseline was {r1_before*100:.1f}%)")
 
     # ── save artifacts ─────────────────────────────────────────
-    os.makedirs(args.output_dir, exist_ok=True)
-    model_path = os.path.join(args.output_dir, "model.pt")
-    tok_path = os.path.join(args.output_dir, "tokenizer.json")
-    config_path = os.path.join(args.output_dir, "config.json")
-
-    torch.save(model.state_dict(), model_path)
-    tok.save(tok_path)
-    with open(config_path, "w") as f:
-        json.dump({
-            "train_intents": TRAIN_INTENTS,
-            "epochs": args.epochs,
-            "batch_size": n_intents,
-            "pairs_per_intent": args.pairs_per_intent,
-            "lr": args.lr,
-            "temperature": args.temperature,
-            "none_neg_k": args.none_neg_k,
-            "none_in_vocab": none_in_vocab,
-            "vocab_size": tok.vocab_size,
-            "r1_random_init": r1_before,
-            "history": history,
-        }, f, indent=2)
-
-    print(f"\n  Model     → {model_path}")
-    print(f"  Tokenizer → {tok_path}")
-    print(f"  Config    → {config_path}")
+    paths = save_artifacts(args.output_dir, model, tok, {
+        "train_intents": TRAIN_INTENTS,
+        "epochs": args.epochs,
+        "batch_size": n_intents,
+        "pairs_per_intent": args.pairs_per_intent,
+        "lr": args.lr,
+        "temperature": args.temperature,
+        "none_neg_k": args.none_neg_k,
+        "none_in_vocab": none_in_vocab,
+        "vocab_size": tok.vocab_size,
+        "r1_random_init": r1_before,
+        "history": history,
+    })
+    print(f"\n  Model     → {paths['model']}")
+    print(f"  Tokenizer → {paths['tokenizer']}")
+    print(f"  Config    → {paths['config']}")
     return model, tok
 
 

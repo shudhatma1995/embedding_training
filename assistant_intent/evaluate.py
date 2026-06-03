@@ -28,7 +28,6 @@ Run:  python evaluate.py            (after train.py has written models/finetuned
 """
 import os
 import sys
-import json
 import argparse
 
 import numpy as np
@@ -39,7 +38,7 @@ sys.path.insert(0, _CIS)
 from tokenizer import SimpleTokenizer   # noqa: E402
 from model import build_model           # noqa: E402
 
-from protos import build_prototypes     # noqa: E402  (shared centroid kernel)
+from shared import load_grouped, build_prototypes   # noqa: E402  (shared helpers)
 
 HERE = os.path.dirname(__file__)
 DATA_DIR = os.path.join(HERE, "data")
@@ -47,17 +46,6 @@ REAL_INTENTS = ["answers", "media", "smart_home", "productivity"]
 
 
 # ── loading ──────────────────────────────────────────────────────────────────
-def load_grouped(path: str, keep: list) -> dict:
-    """Load [{text,intent}] json → {intent: [texts]} for the kept intents."""
-    with open(path) as f:
-        rows = json.load(f)
-    groups = {k: [] for k in keep}
-    for r in rows:
-        if r["intent"] in keep:
-            groups[r["intent"]].append(r["text"])
-    return groups
-
-
 def load_model(model_dir: str, device: str):
     """Rebuild the embedder from saved tokenizer + weights (architecture is
     derived from the tokenizer, exactly as in train.py)."""
