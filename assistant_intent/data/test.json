@@ -276,47 +276,43 @@
     "intent": "smart_home"
   },
   {
-    "text": "set up a call with dr patel at 3",
+    "text": "set up a call with priya at 4pm",
     "intent": "productivity"
   },
   {
-    "text": "set up a meeting with priya at 3",
+    "text": "set up a meeting with dr patel next week",
     "intent": "productivity"
   },
   {
-    "text": "set up a meeting with mike next week",
+    "text": "set up a call with dr patel on friday",
     "intent": "productivity"
   },
   {
-    "text": "set up a meeting with mike on friday",
+    "text": "set up a call with priya on saturday",
     "intent": "productivity"
   },
   {
-    "text": "set up a meeting with dr patel this afternoon",
+    "text": "set up a call with dr patel on saturday",
     "intent": "productivity"
   },
   {
-    "text": "set up a meeting with priya at 4pm",
+    "text": "set up a meeting with mike this afternoon",
     "intent": "productivity"
   },
   {
-    "text": "set up a meeting with grandma at 4pm",
+    "text": "set up a call with priya tomorrow",
     "intent": "productivity"
   },
   {
-    "text": "set up a meeting with grandma tomorrow",
+    "text": "set up a call with priya next week",
     "intent": "productivity"
   },
   {
-    "text": "set up a call with grandma on saturday",
+    "text": "set up a meeting with mike on saturday",
     "intent": "productivity"
   },
   {
-    "text": "set up a call with mike on saturday",
-    "intent": "productivity"
-  },
-  {
-    "text": "do i have anything tomorrow",
+    "text": "set up a call with priya on monday",
     "intent": "productivity"
   },
   {
@@ -324,55 +320,7 @@
     "intent": "productivity"
   },
   {
-    "text": "write an email to dr patel",
-    "intent": "productivity"
-  },
-  {
-    "text": "write an email to grandma",
-    "intent": "productivity"
-  },
-  {
-    "text": "write an email to priya",
-    "intent": "productivity"
-  },
-  {
-    "text": "write an email to mike",
-    "intent": "productivity"
-  },
-  {
-    "text": "any new emails from dr patel",
-    "intent": "productivity"
-  },
-  {
-    "text": "any new emails from grandma",
-    "intent": "productivity"
-  },
-  {
-    "text": "any new emails from priya",
-    "intent": "productivity"
-  },
-  {
-    "text": "any new emails from mike",
-    "intent": "productivity"
-  },
-  {
-    "text": "set a reminder to pick up groceries",
-    "intent": "productivity"
-  },
-  {
-    "text": "set a reminder to take out the trash",
-    "intent": "productivity"
-  },
-  {
-    "text": "set a reminder to send the invoice",
-    "intent": "productivity"
-  },
-  {
-    "text": "set a reminder to water the plants",
-    "intent": "productivity"
-  },
-  {
-    "text": "set a reminder to feed the cat",
+    "text": "do i have anything tomorrow",
     "intent": "productivity"
   },
   {
@@ -384,8 +332,360 @@
     "intent": "productivity"
   },
   {
+    "text": "set a reminder to feed the cat",
+    "intent": "productivity"
+  },
+  {
     "text": "set a reminder to call the bank",
     "intent": "productivity"
+  },
+  {
+    "text": "set a reminder to pick up groceries",
+    "intent": "productivity"
+  },
+  {
+    "text": "set a reminder to send the invoice",
+    "intent": "productivity"
+  },
+  {
+    "text": "set a reminder to take out the trash",
+    "intent": "productivity"
+  },
+  {
+    "text": "when is my next meeting",
+    "intent": "productivity"
+  },
+  {
+    "text": "write an email to priya",
+    "intent": "communication"
+  },
+  {
+    "text": "write an email to mike",
+    "intent": "communication"
+  },
+  {
+    "text": "write an email to dr patel",
+    "intent": "communication"
+  },
+  {
+    "text": "write an email to grandma",
+    "intent": "communication"
+  },
+  {
+    "text": "any new messages from dr patel",
+    "intent": "communication"
+  },
+  {
+    "text": "any new emails from mike",
+    "intent": "communication"
+  },
+  {
+    "text": "any new emails from dr patel",
+    "intent": "communication"
+  },
+  {
+    "text": "any new messages from grandma",
+    "intent": "communication"
+  },
+  {
+    "text": "any new messages from mike",
+    "intent": "communication"
+  },
+  {
+    "text": "any new emails from priya",
+    "intent": "communication"
+  },
+  {
+    "text": "any new messages from priya",
+    "intent": "communication"
+  },
+  {
+    "text": "any new emails from grandma",
+    "intent": "communication"
+  },
+  {
+    "text": "call mike for me",
+    "intent": "communication"
+  },
+  {
+    "text": "call priya for me",
+    "intent": "communication"
+  },
+  {
+    "text": "call dr patel for me",
+    "intent": "communication"
+  },
+  {
+    "text": "call grandma for me",
+    "intent": "communication"
+  },
+  {
+    "text": "send a text to priya",
+    "intent": "communication"
+  },
+  {
+    "text": "send a text to dr patel",
+    "intent": "communication"
+  },
+  {
+    "text": "send a text to mike",
+    "intent": "communication"
+  },
+  {
+    "text": "send a text to grandma",
+    "intent": "communication"
+  },
+  {
+    "text": "start a timer for 1 hour",
+    "intent": "timers_alarms"
+  },
+  {
+    "text": "start a timer for 45 minutes",
+    "intent": "timers_alarms"
+  },
+  {
+    "text": "start a timer for 15 minutes",
+    "intent": "timers_alarms"
+  },
+  {
+    "text": "start a timer for 5 minutes",
+    "intent": "timers_alarms"
+  },
+  {
+    "text": "start a timer for 10 minutes",
+    "intent": "timers_alarms"
+  },
+  {
+    "text": "start a timer for 2 minutes",
+    "intent": "timers_alarms"
+  },
+  {
+    "text": "start a timer for 30 minutes",
+    "intent": "timers_alarms"
+  },
+  {
+    "text": "start a timer for 20 minutes",
+    "intent": "timers_alarms"
+  },
+  {
+    "text": "start a timer for 3 minutes",
+    "intent": "timers_alarms"
+  },
+  {
+    "text": "start a timer for 90 seconds",
+    "intent": "timers_alarms"
+  },
+  {
+    "text": "set the alarm for 4pm",
+    "intent": "timers_alarms"
+  },
+  {
+    "text": "set the alarm for noon",
+    "intent": "timers_alarms"
+  },
+  {
+    "text": "set the alarm for 5 o'clock",
+    "intent": "timers_alarms"
+  },
+  {
+    "text": "set the alarm for 3pm",
+    "intent": "timers_alarms"
+  },
+  {
+    "text": "set the alarm for 10am",
+    "intent": "timers_alarms"
+  },
+  {
+    "text": "set the alarm for 2:30",
+    "intent": "timers_alarms"
+  },
+  {
+    "text": "set the alarm for 1pm",
+    "intent": "timers_alarms"
+  },
+  {
+    "text": "set the alarm for 9am",
+    "intent": "timers_alarms"
+  },
+  {
+    "text": "wake me at noon",
+    "intent": "timers_alarms"
+  },
+  {
+    "text": "wake me at 9am",
+    "intent": "timers_alarms"
+  },
+  {
+    "text": "wake me at 5 o'clock",
+    "intent": "timers_alarms"
+  },
+  {
+    "text": "wake me at 1pm",
+    "intent": "timers_alarms"
+  },
+  {
+    "text": "wake me at 2:30",
+    "intent": "timers_alarms"
+  },
+  {
+    "text": "wake me at 3pm",
+    "intent": "timers_alarms"
+  },
+  {
+    "text": "wake me at 4pm",
+    "intent": "timers_alarms"
+  },
+  {
+    "text": "wake me at 10am",
+    "intent": "timers_alarms"
+  },
+  {
+    "text": "how long left on my timer",
+    "intent": "timers_alarms"
+  },
+  {
+    "text": "how long left on my alarm",
+    "intent": "timers_alarms"
+  },
+  {
+    "text": "will it snow this weekend",
+    "intent": "weather"
+  },
+  {
+    "text": "will it rain tomorrow",
+    "intent": "weather"
+  },
+  {
+    "text": "will it snow today",
+    "intent": "weather"
+  },
+  {
+    "text": "will it rain this weekend",
+    "intent": "weather"
+  },
+  {
+    "text": "will it rain today",
+    "intent": "weather"
+  },
+  {
+    "text": "will it snow tomorrow",
+    "intent": "weather"
+  },
+  {
+    "text": "is it sunny outside",
+    "intent": "weather"
+  },
+  {
+    "text": "is it hot right now",
+    "intent": "weather"
+  },
+  {
+    "text": "is it cold right now",
+    "intent": "weather"
+  },
+  {
+    "text": "is it hot outside",
+    "intent": "weather"
+  },
+  {
+    "text": "what's the forecast for miami",
+    "intent": "weather"
+  },
+  {
+    "text": "what's the forecast for denver",
+    "intent": "weather"
+  },
+  {
+    "text": "should i bring a coat tomorrow",
+    "intent": "weather"
+  },
+  {
+    "text": "should i bring a coat today",
+    "intent": "weather"
+  },
+  {
+    "text": "should i bring an umbrella tomorrow",
+    "intent": "weather"
+  },
+  {
+    "text": "should i bring an umbrella today",
+    "intent": "weather"
+  },
+  {
+    "text": "how do i get to the beach",
+    "intent": "navigation"
+  },
+  {
+    "text": "how do i get to the stadium",
+    "intent": "navigation"
+  },
+  {
+    "text": "how do i get to the nearest gas station",
+    "intent": "navigation"
+  },
+  {
+    "text": "how do i get to the hospital",
+    "intent": "navigation"
+  },
+  {
+    "text": "what's traffic like near the nearest gas station",
+    "intent": "navigation"
+  },
+  {
+    "text": "what's traffic like to the stadium",
+    "intent": "navigation"
+  },
+  {
+    "text": "what's traffic like near the stadium",
+    "intent": "navigation"
+  },
+  {
+    "text": "what's traffic like near the hospital",
+    "intent": "navigation"
+  },
+  {
+    "text": "what's traffic like to the beach",
+    "intent": "navigation"
+  },
+  {
+    "text": "what's traffic like to the hospital",
+    "intent": "navigation"
+  },
+  {
+    "text": "what's traffic like near the beach",
+    "intent": "navigation"
+  },
+  {
+    "text": "what's traffic like to the nearest gas station",
+    "intent": "navigation"
+  },
+  {
+    "text": "find the nearest gas station",
+    "intent": "navigation"
+  },
+  {
+    "text": "find the nearest atm",
+    "intent": "navigation"
+  },
+  {
+    "text": "find the nearest pharmacy",
+    "intent": "navigation"
+  },
+  {
+    "text": "route me to the hospital",
+    "intent": "navigation"
+  },
+  {
+    "text": "route me to the stadium",
+    "intent": "navigation"
+  },
+  {
+    "text": "route me to the beach",
+    "intent": "navigation"
+  },
+  {
+    "text": "route me to the nearest gas station",
+    "intent": "navigation"
   },
   {
     "text": "i need a rideshare to the airport",
@@ -396,59 +696,31 @@
     "intent": "none"
   },
   {
-    "text": "order a sandwich for delivery",
-    "intent": "none"
-  },
-  {
     "text": "order ramen for delivery",
     "intent": "none"
   },
   {
-    "text": "start a timer for 10 minutes",
+    "text": "order a sandwich for delivery",
     "intent": "none"
   },
   {
-    "text": "start a stopwatch for 30 minutes",
+    "text": "translate this page into japanese",
     "intent": "none"
   },
   {
-    "text": "start a timer for 30 minutes",
+    "text": "translate this document into hindi",
     "intent": "none"
   },
   {
-    "text": "start a timer for 20 minutes",
+    "text": "translate this document into japanese",
     "intent": "none"
   },
   {
-    "text": "start a timer for 15 minutes",
+    "text": "translate this page into german",
     "intent": "none"
   },
   {
-    "text": "start a stopwatch for 5 minutes",
-    "intent": "none"
-  },
-  {
-    "text": "start a stopwatch for 15 minutes",
-    "intent": "none"
-  },
-  {
-    "text": "start a stopwatch for 10 minutes",
-    "intent": "none"
-  },
-  {
-    "text": "start a timer for 5 minutes",
-    "intent": "none"
-  },
-  {
-    "text": "start a stopwatch for 20 minutes",
-    "intent": "none"
-  },
-  {
-    "text": "translate this page into french",
-    "intent": "none"
-  },
-  {
-    "text": "translate this document into italian",
+    "text": "translate this page into hindi",
     "intent": "none"
   },
   {
@@ -460,27 +732,15 @@
     "intent": "none"
   },
   {
-    "text": "translate this page into hindi",
+    "text": "translate this page into french",
     "intent": "none"
   },
   {
-    "text": "translate this document into japanese",
+    "text": "translate this page into spanish",
     "intent": "none"
   },
   {
-    "text": "translate this document into hindi",
-    "intent": "none"
-  },
-  {
-    "text": "translate this page into german",
-    "intent": "none"
-  },
-  {
-    "text": "translate this page into japanese",
-    "intent": "none"
-  },
-  {
-    "text": "translate this page into mandarin",
+    "text": "translate this document into mandarin",
     "intent": "none"
   }
 ]

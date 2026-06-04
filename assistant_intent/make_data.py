@@ -84,12 +84,28 @@ BASE_SLOTS = {
     "n2":       ["40", "60", "80", "100", "200"],
     "gibberish": ["asdfgh", "blah blah blah", "qwerty asdf", "lorem ipsum",
                   "mmm hmm", "uhh what"],
+    # timers_alarms
+    "duration": ["10 minutes", "5 minutes", "20 minutes", "15 minutes",
+                 "30 minutes", "2 minutes", "45 minutes", "1 hour",
+                 "90 seconds", "3 minutes"],
+    "timer_label": ["the pasta", "the laundry", "the oven", "my workout",
+                    "the tea", "the eggs"],
+    # navigation (place is an entity slot → 70/30 so test has unseen destinations)
+    "place": ["the airport", "downtown", "home", "work", "the grocery store",
+              "the mall", "the train station", "the nearest pharmacy",
+              "the beach", "the stadium", "the hospital", "the nearest gas station"],
+    # weather (city is an entity slot)
+    "city": ["new york", "london", "paris", "tokyo", "chicago", "seattle",
+             "miami", "denver"],
+    # communication
+    "message_topic": ["about the report", "that i'll be late", "the meeting notes",
+                      "to say happy birthday", "about dinner", "that i'm on my way"],
 }
 
 # These high-variety slots get split: ~70% of values for train, ~30% for test
 # (test sentences therefore contain ENTITIES the model never saw in training).
 ENTITY_SLOTS = {"room", "genre", "artist", "playlist", "contact", "country",
-                "landmark", "food", "transport"}
+                "landmark", "food", "transport", "place", "city"}
 
 # ── templates per intent: separate phrasings for train vs test ───────────────
 TEMPLATES = {
@@ -128,24 +144,89 @@ TEMPLATES = {
     },
     "productivity": {
         "train": [
-            "schedule a {meeting|call} with {contact} {when_phrase}",
-            "add {a dentist appointment|a meeting|a reminder} {when_phrase}",
+            "schedule a {meeting|call|appointment} with {contact} {when_phrase}",
+            "add {a dentist appointment|a meeting|an event} {when_phrase}",
             "what's on my calendar {today|tomorrow|this week}",
             "am i free {when_phrase}",
             "remind me to {reminders}",
             "move my {time} {meeting|call} to {time}",
-            "email {contact} {about the report|that i'll be late|the meeting notes}",
-            "send {contact} an email",
-            "{reply to|forward} {contact}'s email",
-            "read me my {latest|last} email",
-            "check my inbox",
+            "cancel my {time} {meeting|appointment}",
+            "what's my {next|first} {meeting|appointment}",
         ],
         "test": [
             "set up a {meeting|call} with {contact} {when_phrase}",
             "do i have anything {today|tomorrow}",
-            "write an email to {contact}",
-            "any new emails from {contact}",
             "set a reminder to {reminders}",
+            "when is my next {meeting|appointment}",
+        ],
+    },
+    "communication": {
+        "train": [
+            "call {contact}",
+            "give {contact} a call",
+            "text {contact} {message_topic}",
+            "send {contact} a {text|message}",
+            "email {contact} {message_topic}",
+            "send {contact} an email",
+            "{reply to|forward} {contact}'s email",
+            "read me my {latest|last} email",
+            "check my {inbox|messages}",
+        ],
+        "test": [
+            "write an email to {contact}",
+            "any new {emails|messages} from {contact}",
+            "call {contact} for me",
+            "send a text to {contact}",
+        ],
+    },
+    "timers_alarms": {
+        "train": [
+            "set a timer for {duration}",
+            "set a timer for {timer_label}",
+            "set an alarm for {time}",
+            "wake me up at {time}",
+            "{cancel|stop|pause} {my timer|the timer|the alarm}",
+            "{snooze|turn off|dismiss} the alarm",
+            "how {much time is|long is} left on my timer",
+        ],
+        "test": [
+            "start a timer for {duration}",
+            "set the alarm for {time}",
+            "wake me at {time}",
+            "how long left on my {timer|alarm}",
+        ],
+    },
+    "weather": {
+        "train": [
+            "what's the weather {today|tomorrow|this weekend|tonight}",
+            "is it going to {rain|snow|be sunny|be windy} {today|tomorrow|tonight}",
+            "what's the {temperature|forecast} {today|tomorrow|this weekend}",
+            "do i need {an umbrella|a jacket|sunglasses} {today|tomorrow}",
+            "how {hot|cold|windy} is it {today|right now|going to be}",
+            "what's the weather like in {city}",
+        ],
+        "test": [
+            "will it {rain|snow} {today|tomorrow|this weekend}",
+            "is it {hot|cold|sunny} {outside|right now}",
+            "what's the forecast for {city}",
+            "should i bring {an umbrella|a coat} {today|tomorrow}",
+        ],
+    },
+    "navigation": {
+        "train": [
+            "navigate to {place}",
+            "directions to {place}",
+            "how long {to get to|to} {place}",
+            "what's the {fastest|best} route to {place}",
+            "is there traffic {to|on the way to} {place}",
+            "find {a gas station|parking|a coffee shop} near {me|here}",
+            "take me to {place}",
+        ],
+        "test": [
+            "how do i get to {place}",
+            "what's traffic like {to|near} {place}",
+            "find the nearest {gas station|pharmacy|atm}",
+            "route me to {place}",
         ],
     },
     "answers": {
@@ -169,7 +250,6 @@ TEMPLATES = {
         "train": [
             "order me {food}",
             "book me a {transport}",
-            "set a {n} minute timer",
             "call me {an uber|a taxi|a cab}",
             "add {food} to my shopping list",
             "{ugh|meh|hmm} {what a day|whatever|never mind}",
@@ -178,7 +258,6 @@ TEMPLATES = {
         "test": [
             "i need a {transport} to the airport",
             "order {food} for delivery",
-            "start a {timer|stopwatch} for {n} minutes",
             "translate this {document|page} into {language}",
         ],
     },

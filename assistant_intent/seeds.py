@@ -12,11 +12,13 @@ Deliberate design choices baked in:
     mean different things, e.g. "turn on the lights" (smart_home) vs
     "turn on some music" (media), "play some jazz" (media) vs "play with my dog"
     (none). These are what force the model to learn meaning, not keywords.
-  * productivity covers BOTH calendar and email, roughly balanced, so the bundle
-    can later split cleanly.
+  * communication groups call/text/email (reach a person); productivity is
+    calendar + reminders. (Email was split out of productivity once communication
+    was added -- a supported capability graduating into its own intent.)
   * none includes gibberish, statements, and out-of-scope requests -- including
-    things that are *almost* a supported intent but outside v1 scope
-    (timers, garage door, shopping list).
+    things that are *almost* a supported intent but outside current scope
+    (garage door, shopping list, ride-booking). Note: timers used to live here
+    and graduated into `timers_alarms`.
 All lowercase (the tokenizer lowercases anyway; keeps seeds consistent).
 """
 
@@ -78,7 +80,7 @@ SEEDS = {
         "turn on the bedroom lamp",
     ],
     "productivity": [
-        # --- calendar ---
+        # calendar + reminders/tasks (email moved to `communication`)
         "schedule a meeting with john tomorrow at 3",
         "what's on my calendar today",              # collision: question, but needs app -> productivity
         "add a dentist appointment on friday",
@@ -86,7 +88,17 @@ SEEDS = {
         "move my 2pm meeting to 4",
         "am i free thursday afternoon",
         "set up a calendar event for the standup",
-        # --- email ---
+        "what's my next meeting",
+        "cancel my 3pm meeting",
+        "remind me to pick up groceries",
+        "do i have anything scheduled for monday",
+        "block off an hour tomorrow afternoon",
+        "when is my next appointment",
+        "add lunch with sarah on friday",
+        "set a reminder to water the plants",
+    ],
+    "communication": [
+        # --- email (moved out of productivity) ---
         "email mom that i'll be late",
         "send an email to my boss about the report",
         "do i have any new emails",
@@ -95,6 +107,65 @@ SEEDS = {
         "compose an email to the team",
         "check my inbox",
         "forward that email to alex",
+        # --- calls / texts ---
+        "call mom",
+        "give dad a call",
+        "text sarah that i'm on my way",
+        "send a text to john",
+        "call my boss",
+        "facetime grandma",
+        "send a message to the team",
+    ],
+    "timers_alarms": [
+        "set a timer for 10 minutes",
+        "set a 5 minute timer",
+        "set an alarm for 7am",
+        "wake me up at 6:30",
+        "set an alarm for 6 am tomorrow",
+        "cancel my timer",
+        "how much time is left on my timer",
+        "set a timer for 20 minutes",
+        "pause the timer",
+        "set an alarm for noon",
+        "snooze the alarm",
+        "turn off the alarm",                       # collision: "turn off" but alarm, not lights -> timers_alarms
+        "start a 30 second timer",
+        "set a timer for the pasta",
+        "wake me at 8 in the morning",
+    ],
+    "weather": [
+        "what's the weather today",
+        "is it going to rain tomorrow",
+        "what's the temperature outside",
+        "do i need an umbrella today",
+        "what's the forecast for this weekend",
+        "how hot is it going to be tomorrow",
+        "is it cold outside",
+        "will it snow tonight",
+        "what's the weather like in london",
+        "is it sunny right now",
+        "how windy is it today",
+        "what's the humidity like",
+        "should i wear a jacket today",
+        "is it going to be nice this weekend",
+        "what's the high for today",
+    ],
+    "navigation": [
+        "navigate home",
+        "give me directions to the airport",
+        "how long will it take to get downtown",
+        "what's the fastest route to work",
+        "is there traffic on the way to the office",
+        "find a gas station near me",
+        "take me to the nearest pharmacy",
+        "how far is the grocery store",             # collision: "how far" but a reachable place -> navigation
+        "directions to the train station",
+        "what's the best route home",
+        "how's traffic right now",
+        "find parking near the stadium",
+        "navigate to the mall",
+        "how long to the beach",
+        "show me the way to the hospital",
     ],
     "none": [
         "asdfgh",
@@ -102,8 +173,7 @@ SEEDS = {
         "book me a flight to paris",
         "order me a pizza",
         "ugh what a day",
-        "call me an uber",
-        "set a 10 minute timer",                    # almost an assistant feature, but out of v1 scope
+        "call me an uber",                          # collision: "call" but not a person -> none (ride booking)
         "translate this sentence into spanish",
         "play with my dog",                         # collision: "play" but NOT media -> none
         "i think i left the stove on",

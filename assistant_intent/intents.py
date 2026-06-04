@@ -22,7 +22,8 @@ theme grows to ~4+ distinct actions or coarse classes start getting confused).
 
 # Stable ids. Data files and the trained model refer to these strings —
 # don't rename casually once data exists.
-INTENT_IDS = ["answers", "media", "smart_home", "productivity", "none"]
+INTENT_IDS = ["answers", "media", "smart_home", "productivity", "communication",
+              "timers_alarms", "weather", "navigation", "none"]
 
 # `none` is the out-of-scope class: handled by a similarity threshold / negatives
 # at train time, NEVER trained as a positive prototype (see NONE_HANDLING below).
@@ -83,19 +84,88 @@ INTENT_SPEC = {
     },
     "productivity": {
         "definition": (
-            "Anything that touches the CALENDAR or EMAIL/GMAIL -- create, read, "
-            "or modify -- even when phrased as a question. (Bundles calendar + "
-            "email for v1; keep both well-represented so it can split later.)"
+            "Manage the CALENDAR and REMINDERS/TASKS -- create, read, move, or "
+            "cancel events; set reminders -- even when phrased as a question. "
+            "(Email/messaging moved out to `communication`.)"
         ),
         "examples": [
             "schedule a meeting with john tomorrow at 3",
-            "email mom that i'll be late",
             "what's on my calendar today",
             "remind me to call the bank",
+            "move my 2pm meeting to 4",
         ],
         "not": [
+            "reaching a person (call/text/email) -> communication",
+            "'remind me to email mom' -> productivity (it's a reminder, not the act of emailing)",
             "'what time is it in tokyo' -> answers (needs no app)",
             "controlling media/lights -> media / smart_home",
+        ],
+    },
+    "communication": {
+        "definition": (
+            "Reach a PERSON: place a phone call, send a text/SMS, or compose / "
+            "read / reply to EMAIL. The channel (call/text/email) and the contact "
+            "are slots."
+        ),
+        "examples": [
+            "call mom",
+            "text sarah that i'm on my way",
+            "email my boss about the report",
+            "read me my latest email",
+        ],
+        "not": [
+            "scheduling time with someone -> productivity ('schedule a call with john')",
+            "'call me an uber' -> none (not a person)",
+            "'remind me to text dad' -> productivity (it's a reminder)",
+        ],
+    },
+    "timers_alarms": {
+        "definition": (
+            "Set, cancel, or check a countdown TIMER or a clock ALARM. The "
+            "duration or wake-time (and an optional label) are slots. No task "
+            "content and no calendar entry."
+        ),
+        "examples": [
+            "set a timer for 10 minutes",
+            "set an alarm for 7am",
+            "wake me up at 6:30",
+            "cancel my timer",
+        ],
+        "not": [
+            "has a task/event -> productivity ('remind me to call the bank')",
+            "'what time is it' -> answers",
+        ],
+    },
+    "weather": {
+        "definition": (
+            "Current conditions or the FORECAST (temperature, rain, snow, wind) "
+            "for a place/time. Hits a weather service."
+        ),
+        "examples": [
+            "what's the weather today",
+            "will it rain tomorrow",
+            "how hot is it going to be",
+            "do i need an umbrella",
+        ],
+        "not": [
+            "definitional/scientific knowledge -> answers "
+            "('difference between weather and climate')",
+        ],
+    },
+    "navigation": {
+        "definition": (
+            "Directions, ETA, traffic, or finding nearby places -- anything that "
+            "needs your LOCATION or live maps. Not booking a ride or a ticket."
+        ),
+        "examples": [
+            "navigate home",
+            "how long to the airport",
+            "directions to the train station",
+            "is there traffic to work",
+        ],
+        "not": [
+            "pure geographic knowledge -> answers ('how far is the moon')",
+            "booking a ride/ticket -> none ('call me an uber', 'book a flight')",
         ],
     },
     "none": {
@@ -125,6 +195,17 @@ BOUNDARY_RULES = [
     "'book me a flight' -> none (unsupported action).",
     "Shared verbs decide by OBJECT, not verb: 'turn on' + lights -> smart_home; "
     "'turn on' + music -> media. Generate many such near-collisions on purpose.",
+    "timers_alarms vs productivity: a bare countdown or wake-time with NO task -> "
+    "timers_alarms ('set an alarm for 7am'); a task/event with content -> "
+    "productivity ('remind me to call the bank').",
+    "communication vs productivity: reaching a person (call/text/email) -> "
+    "communication; scheduling time or setting a reminder -> productivity. "
+    "'email mom i'll be late' -> communication; 'remind me to email mom' -> productivity.",
+    "weather vs answers: actual conditions/forecast -> weather ('will it rain "
+    "tomorrow'); definitional knowledge -> answers ('weather vs climate').",
+    "navigation vs answers vs none: needs your location/live traffic -> navigation "
+    "('how long to the airport'); geographic knowledge -> answers ('how far is the "
+    "moon'); booking a ride/ticket -> none ('call me an uber').",
 ]
 
 # Single-label classifier can't represent two intents at once.
