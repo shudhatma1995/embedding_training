@@ -38,7 +38,8 @@ sys.path.insert(0, _CIS)
 from tokenizer import SimpleTokenizer   # noqa: E402
 from model import build_model           # noqa: E402
 
-from shared import load_by_intent, build_prototypes   # noqa: E402  (shared helpers)
+from data import load_by_intent       # noqa: E402  (json I/O lives in data.py)
+from shared import build_prototypes    # noqa: E402  (prototype classifier kernel)
 
 HERE = os.path.dirname(__file__)
 DATA_DIR = os.path.join(HERE, "data")

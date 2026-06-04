@@ -1,36 +1,23 @@
 """
-shared.py  -  helpers used by BOTH train.py and evaluate.py.
+shared.py  -  the nearest-prototype classifier, used by BOTH train.py and evaluate.py.
 ================================================================================
-Two small things lived in duplicate before this module existed:
+This is the ONE source of truth for "how do we turn the embedder into a classifier":
 
-  load_by_intent   - read the {text,intent} json into {intent: [texts]}.
-                     train.py and evaluate.py each carried an identical copy.
-  build_prototypes - the nearest-prototype kernel (encode → mean → L2-normalize).
-                     train.py uses it to track test Recall@1 each epoch; evaluate.py
-                     uses it as the canonical classifier. Duplication risked silent
-                     drift between the training-time and eval-time numbers.
+  build_prototypes - the kernel: encode → mean → L2-normalize, one centroid/intent.
+  proto_recall1    - the in-training quality signal: nearest-prototype Recall@1 on
+                     the held-out test queries.
 
-Keeping both here gives ONE source of truth. The module is deliberately
-dependency-light (json + numpy only — `model.encode` is passed in) and is NOT
-named `evaluate`, so nothing on sys.path can shadow it (train.py puts
+train.py calls proto_recall1 to track test Recall@1 each epoch; evaluate.py calls
+build_prototypes directly as the canonical classifier. Keeping both here stops the
+training-time and eval-time numbers from silently drifting apart.
+
+Deliberately dependency-light (numpy + torch only — `model.encode` is passed in) and
+NOT named `evaluate`, so nothing on sys.path can shadow it (train.py puts
 customer_intent_search/ — which has its own sentence_transformers-importing
 evaluate.py — at the front of sys.path).
 """
-import json
-
 import numpy as np
-
-
-def load_by_intent(path: str, keep: list) -> dict:
-    """Load [{text,intent}] json → {intent: [texts]} for the kept intents.
-    Keys follow `keep` order; an intent with no rows maps to an empty list."""
-    with open(path) as f:
-        rows = json.load(f)
-    groups = {k: [] for k in keep}
-    for r in rows:
-        if r["intent"] in keep:
-            groups[r["intent"]].append(r["text"])
-    return groups
+import torch
 
 
 def build_prototypes(model, tok, train_groups, device):
@@ -49,3 +36,28 @@ def build_prototypes(model, tok, train_groups, device):
         m = e.mean(axis=0)                                        # centroid
         protos.append(m / (np.linalg.norm(m) + 1e-9))            # back to unit length
     return np.stack(protos), intents                             # [C,D], [C]
+
+
+@torch.no_grad()
+def proto_recall1(model, tok, train_groups, test_groups, device) -> float:
+    """
+    Centroid classifier: prototype[intent] = L2-normalized MEAN of that intent's
+    train embeddings. Each test query is labelled by its nearest prototype (cosine).
+    Returns Recall@1 over the held-out test queries (the 4 real intents).
+
+    This is the honest generalization signal: test.json uses unseen phrasings AND
+    unseen entities, so this number reflects pattern-learning, not memorization.
+    """
+    model.eval()
+    protos, intents = build_prototypes(model, tok, train_groups, device)  # [C,D], [C]
+
+    correct = total = 0
+    for ti, it in enumerate(intents):
+        q = model.encode(test_groups[it], tok, device=device)    # [m,D]
+        if len(q) == 0:
+            continue
+        pred = (q @ protos.T).argmax(axis=1)                     # nearest prototype
+        correct += int((pred == ti).sum())
+        total += len(q)
+    model.train()
+    return correct / max(1, total)

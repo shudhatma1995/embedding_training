@@ -34,11 +34,9 @@ Run:  python train.py            (writes models/finetuned/{model.pt,tokenizer.js
 """
 import os
 import sys
-import json
 import time
 import random
 import argparse
-from collections import defaultdict
 
 import torch
 import torch.nn.functional as F
@@ -51,51 +49,15 @@ sys.path.insert(0, _CIS)
 from tokenizer import SimpleTokenizer   # noqa: E402
 from model import build_model           # noqa: E402
 
-from shared import load_by_intent, build_prototypes   # noqa: E402  (shared helpers)
+# Side code (I/O + batch shaping) lives in data.py; the classifier kernel in shared.py.
+from data import load_by_intent, make_pairs, iter_batches, save_artifacts  # noqa: E402
+from shared import proto_recall1   # noqa: E402
 
 HERE = os.path.dirname(__file__)
 DATA_DIR = os.path.join(HERE, "data")
 
 # Intents trained as prototypes. `none` is intentionally excluded (threshold at eval).
 TRAIN_INTENTS = ["answers", "media", "smart_home", "productivity"]
-
-
-# ── data ─────────────────────────────────────────────────────────────────────
-def make_pairs(groups: dict, pairs_per_intent: int, rng: random.Random):
-    """
-    One positive pair = two DIFFERENT utterances of the same intent.
-    Re-sampled every epoch (dynamic pairing) so a query meets many partners.
-    Returns parallel lists: anchors, positives, intents.
-    """
-    A, P, I = [], [], []
-    for intent, qs in groups.items():
-        s = qs[:]
-        rng.shuffle(s)
-        n = min(pairs_per_intent, len(s) // 2)
-        for i in range(0, n * 2, 2):
-            A.append(s[i])
-            P.append(s[i + 1])
-            I.append(intent)
-    return A, P, I
-
-
-def iter_batches(A, P, I, rng: random.Random):
-    """
-    Yield batches with EXACTLY ONE pair per intent (no false negatives).
-    Each yield: (anchor_texts, positive_texts) of length == n_intents.
-    Incomplete trailing batches are dropped to keep the loss matrix square.
-    """
-    by = defaultdict(list)
-    for idx, intent in enumerate(I):
-        by[intent].append(idx)                 # group pair-indices by intent
-    for v in by.values():
-        rng.shuffle(v)
-    n_intents = len(by)
-    rounds = max(len(v) for v in by.values())
-    for r in range(rounds):
-        batch = [v[r] for v in by.values() if r < len(v)]
-        if len(batch) == n_intents:           # full batch only
-            yield [A[i] for i in batch], [P[i] for i in batch]
 
 
 # ── loss ─────────────────────────────────────────────────────────────────────
@@ -118,32 +80,6 @@ def mnr_loss(anchor_emb: torch.Tensor, pos_emb: torch.Tensor, temperature: float
         sim = torch.cat([sim, (anchor_emb @ neg_emb.T) / temperature], dim=1)  # [B,B+k]
     labels = torch.arange(anchor_emb.shape[0], device=sim.device)
     return F.cross_entropy(sim, labels)
-
-
-# ── evaluation (prototype / centroid classifier) ─────────────────────────────
-@torch.no_grad()
-def proto_recall1(model, tok, train_groups, test_groups, device) -> float:
-    """
-    Centroid classifier: prototype[intent] = L2-normalized MEAN of that intent's
-    train embeddings. Each test query is labelled by its nearest prototype (cosine).
-    Returns Recall@1 over the held-out test queries (the 4 real intents).
-
-    This is the honest generalization signal: test.json uses unseen phrasings AND
-    unseen entities, so this number reflects pattern-learning, not memorization.
-    """
-    model.eval()
-    protos, intents = build_prototypes(model, tok, train_groups, device)  # [C,D], [C]
-
-    correct = total = 0
-    for ti, it in enumerate(intents):
-        q = model.encode(test_groups[it], tok, device=device)    # [m,D]
-        if len(q) == 0:
-            continue
-        pred = (q @ protos.T).argmax(axis=1)                     # nearest prototype
-        correct += int((pred == ti).sum())
-        total += len(q)
-    model.train()
-    return correct / max(1, total)
 
 
 # ── scheduler ────────────────────────────────────────────────────────────────
@@ -199,21 +135,6 @@ def run_epoch(model, tok, train_groups, none_pool, optimizer, scheduler,
             correct += int((pred == labels).sum())
             npairs += ae.shape[0]
     return tot_loss / max(1, nbatch), correct / max(1, npairs)
-
-
-def save_artifacts(output_dir, model, tok, config):
-    """Write model.pt, tokenizer.json, config.json to output_dir; return their paths."""
-    os.makedirs(output_dir, exist_ok=True)
-    paths = {
-        "model": os.path.join(output_dir, "model.pt"),
-        "tokenizer": os.path.join(output_dir, "tokenizer.json"),
-        "config": os.path.join(output_dir, "config.json"),
-    }
-    torch.save(model.state_dict(), paths["model"])
-    tok.save(paths["tokenizer"])
-    with open(paths["config"], "w") as f:
-        json.dump(config, f, indent=2)
-    return paths
 
 
 def train(args):
