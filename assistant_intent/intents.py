@@ -24,6 +24,13 @@ theme grows to ~4+ distinct actions or coarse classes start getting confused).
 # don't rename casually once data exists.
 INTENT_IDS = ["answers", "media", "smart_home", "productivity", "none"]
 
+# `none` is the out-of-scope class: handled by a similarity threshold / negatives
+# at train time, NEVER trained as a positive prototype (see NONE_HANDLING below).
+# REAL_INTENTS is therefore the trainable superset — train.py/evaluate.py select a
+# (possibly partial) subset of it via --intents; `none` is excluded by construction.
+NONE_ID = "none"
+REAL_INTENTS = [i for i in INTENT_IDS if i != NONE_ID]
+
 # Full spec for each intent. `examples` are CANONICAL illustrations for the
 # guideline (not the training set — seed phrasings come next, in make_data.py).
 INTENT_SPEC = {

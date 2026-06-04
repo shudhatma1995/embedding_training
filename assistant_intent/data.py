@@ -31,6 +31,14 @@ def load_by_intent(path: str, keep: list) -> dict:
     return groups
 
 
+def intents_in_file(path: str) -> list:
+    """Return the sorted unique intent labels actually present in a {text,intent} json.
+    Used to validate a requested --intents subset against what the data really has."""
+    with open(path) as f:
+        rows = json.load(f)
+    return sorted({r["intent"] for r in rows})
+
+
 # ── pairing ──────────────────────────────────────────────────────────────────
 def make_pairs(groups: dict, pairs_per_intent: int, rng: random.Random):
     """

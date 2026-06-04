@@ -28,6 +28,7 @@ Run:  python evaluate.py            (after train.py has written models/finetuned
 """
 import os
 import sys
+import json
 import argparse
 
 import numpy as np
@@ -40,22 +41,25 @@ from model import build_model           # noqa: E402
 
 from data import load_by_intent       # noqa: E402  (json I/O lives in data.py)
 from shared import build_prototypes    # noqa: E402  (prototype classifier kernel)
+from intents import REAL_INTENTS, NONE_ID   # noqa: E402  (taxonomy source of truth)
 
 HERE = os.path.dirname(__file__)
 DATA_DIR = os.path.join(HERE, "data")
-REAL_INTENTS = ["answers", "media", "smart_home", "productivity"]
 
 
 # ── loading ──────────────────────────────────────────────────────────────────
 def load_model(model_dir: str, device: str):
     """Rebuild the embedder from saved tokenizer + weights (architecture is
-    derived from the tokenizer, exactly as in train.py)."""
+    derived from the tokenizer, exactly as in train.py). Also returns the saved
+    config.json so eval can mirror the EXACT intents the model was trained on."""
     tok = SimpleTokenizer.load(os.path.join(model_dir, "tokenizer.json"))
     model = build_model(tok).to(device)
     state = torch.load(os.path.join(model_dir, "model.pt"), map_location=device)
     model.load_state_dict(state)
     model.eval()
-    return model, tok
+    config_path = os.path.join(model_dir, "config.json")
+    config = json.load(open(config_path)) if os.path.exists(config_path) else {}
+    return model, tok, config
 
 
 # ── prototypes ───────────────────────────────────────────────────────────────
@@ -147,13 +151,20 @@ def evaluate_none(model, tok, test_groups, none_texts, protos, intents, device):
 def main():
     ap = argparse.ArgumentParser(description="Evaluate the assistant intent embedder")
     ap.add_argument("--model-dir", default=os.path.join(HERE, "models", "finetuned"))
+    ap.add_argument("--intents", nargs="+", default=None,
+                    help="override the intent set to evaluate (default: the model's "
+                         "trained intents from config.json).")
     args = ap.parse_args()
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    model, tok = load_model(args.model_dir, device)
-    train_groups = load_by_intent(os.path.join(DATA_DIR, "train.json"), REAL_INTENTS)
-    test_groups = load_by_intent(os.path.join(DATA_DIR, "test.json"), REAL_INTENTS)
-    none_texts = load_by_intent(os.path.join(DATA_DIR, "test.json"), ["none"])["none"]
+    model, tok, config = load_model(args.model_dir, device)
+    # Follow the model by default (no train/eval mismatch possible); --intents overrides;
+    # REAL_INTENTS is the last-resort fallback for a config without train_intents.
+    real_intents = args.intents or config.get("train_intents") or REAL_INTENTS
+    print(f"  Evaluating intents: {', '.join(real_intents)}\n")
+    train_groups = load_by_intent(os.path.join(DATA_DIR, "train.json"), real_intents)
+    test_groups = load_by_intent(os.path.join(DATA_DIR, "test.json"), real_intents)
+    none_texts = load_by_intent(os.path.join(DATA_DIR, "test.json"), [NONE_ID])[NONE_ID]
 
     print("=" * 64)
     print("PART A — retrieval on the 4 REAL intents (nearest prototype)")

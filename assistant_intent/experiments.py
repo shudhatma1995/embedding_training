@@ -60,6 +60,7 @@ CONFIGS = [
 def run_one(cfg, seed, device, train_groups, test_groups, none_texts, scratch):
     """Train one config at one seed (output suppressed) and return eval metrics."""
     args = SimpleNamespace(
+        intents=None,                        # train the full REAL_INTENTS set
         epochs=25, pairs_per_intent=30, lr=3e-4, temperature=0.05,
         warmup_steps=30, seed=seed,
         none_neg_k=cfg["none_neg_k"], none_in_vocab=cfg["none_in_vocab"],

@@ -50,14 +50,41 @@ from tokenizer import SimpleTokenizer   # noqa: E402
 from model import build_model           # noqa: E402
 
 # Side code (I/O + batch shaping) lives in data.py; the classifier kernel in shared.py.
-from data import load_by_intent, make_pairs, iter_batches, save_artifacts  # noqa: E402
+from data import load_by_intent, intents_in_file, make_pairs, iter_batches, save_artifacts  # noqa: E402
 from shared import proto_recall1   # noqa: E402
+# Intent taxonomy is owned by intents.py (single source of truth); `none` is excluded
+# from the trainable set by construction.
+from intents import REAL_INTENTS, NONE_ID   # noqa: E402
 
 HERE = os.path.dirname(__file__)
 DATA_DIR = os.path.join(HERE, "data")
 
-# Intents trained as prototypes. `none` is intentionally excluded (threshold at eval).
-TRAIN_INTENTS = ["answers", "media", "smart_home", "productivity"]
+
+def resolve_train_intents(requested, data_path):
+    """Pick & validate the intents to train as prototypes.
+
+    requested=None → all of REAL_INTENTS (the default). Otherwise the user's subset.
+    Fails loudly (rather than silently training on nothing) if the request:
+      - includes `none`     → it's the out-of-scope class, never a positive prototype;
+      - names an intent that isn't actually in the data file;
+      - has fewer than 2 intents → contrastive loss would have no in-batch negatives.
+    """
+    chosen = list(requested) if requested else list(REAL_INTENTS)
+    present = set(intents_in_file(data_path))
+    if NONE_ID in chosen:
+        raise SystemExit(
+            f"`{NONE_ID}` can't be trained as a prototype (it's the out-of-scope class, "
+            f"handled by threshold/negatives). Remove it from --intents.")
+    missing = [i for i in chosen if i not in present]
+    if missing:
+        raise SystemExit(
+            f"--intents {missing} not found in {os.path.basename(data_path)}. "
+            f"Available: {sorted(present - {NONE_ID})}")
+    if len(chosen) < 2:
+        raise SystemExit(
+            f"Need ≥2 intents for contrastive training (got {chosen}); with one intent "
+            f"the similarity matrix is 1×1 and the loss has no in-batch negatives.")
+    return chosen
 
 
 # ── loss ─────────────────────────────────────────────────────────────────────
@@ -143,12 +170,15 @@ def train(args):
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"  Device: {device}")
 
-    # data: 4 real intents only (none excluded — handled by threshold in Stage 5)
-    train_groups = load_by_intent(os.path.join(DATA_DIR, "train.json"), TRAIN_INTENTS)
-    test_groups = load_by_intent(os.path.join(DATA_DIR, "test.json"), TRAIN_INTENTS)
+    # which real intents to train as prototypes (validated subset; none excluded —
+    # handled by threshold in Stage 5). Default = all of REAL_INTENTS.
+    train_intents = resolve_train_intents(args.intents, os.path.join(DATA_DIR, "train.json"))
+    train_groups = load_by_intent(os.path.join(DATA_DIR, "train.json"), train_intents)
+    test_groups = load_by_intent(os.path.join(DATA_DIR, "test.json"), train_intents)
     n_intents = len(train_groups)
-    print("\n  Train queries per intent:")
-    for it in TRAIN_INTENTS:
+    print(f"\n  Training intents ({n_intents}): {', '.join(train_intents)}")
+    print("  Train queries per intent:")
+    for it in train_intents:
         print(f"    {it:<13} {len(train_groups[it]):>4} train | {len(test_groups[it]):>3} test")
 
     # `none` enters training via TWO independent switches (so we can ablate them):
@@ -158,7 +188,7 @@ def train(args):
     none_in_vocab = args.none_in_vocab or args.none_neg_k > 0
     none_pool = []
     if none_in_vocab:
-        none_pool = load_by_intent(os.path.join(DATA_DIR, "train.json"), ["none"])["none"]
+        none_pool = load_by_intent(os.path.join(DATA_DIR, "train.json"), [NONE_ID])[NONE_ID]
 
     # tokenizer fit on training texts (+ none pool iff none_in_vocab)
     fit_texts = [t for qs in train_groups.values() for t in qs]
@@ -205,7 +235,7 @@ def train(args):
 
     # ── save artifacts ─────────────────────────────────────────
     paths = save_artifacts(args.output_dir, model, tok, {
-        "train_intents": TRAIN_INTENTS,
+        "train_intents": train_intents,
         "epochs": args.epochs,
         "batch_size": n_intents,
         "pairs_per_intent": args.pairs_per_intent,
@@ -225,6 +255,9 @@ def train(args):
 
 def main():
     ap = argparse.ArgumentParser(description="Train the assistant intent embedder")
+    ap.add_argument("--intents", nargs="+", default=None,
+                    help="subset of real intents to train (default: all of REAL_INTENTS). "
+                         "`none` is not allowed; needs ≥2 intents.")
     ap.add_argument("--epochs", type=int, default=25)
     ap.add_argument("--pairs-per-intent", type=int, default=30,
                     help="positive pairs sampled per intent per epoch (max = n_queries // 2)")
