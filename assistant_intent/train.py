@@ -253,7 +253,10 @@ def train(args):
     return model, tok
 
 
-def main():
+def build_parser():
+    """The training CLI. Exposed so other entry points (e.g. experiments.py) can
+    do `build_parser().parse_args([])` to get the exact default hyperparameters
+    instead of re-typing them — one source of truth for the defaults."""
     ap = argparse.ArgumentParser(description="Train the assistant intent embedder")
     ap.add_argument("--intents", nargs="+", default=None,
                     help="subset of real intents to train (default: all of REAL_INTENTS). "
@@ -271,7 +274,11 @@ def main():
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--output-dir", type=str,
                     default=os.path.join(HERE, "models", "finetuned"))
-    args = ap.parse_args()
+    return ap
+
+
+def main():
+    args = build_parser().parse_args()
     print("=" * 60)
     print("TRAINING assistant intent embedder (Stage 4)")
     print("=" * 60)
