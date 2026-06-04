@@ -59,8 +59,8 @@ CONFIGS = [
 
 # (metric key, column header, format-as-percent?) — one place drives table + per-seed line.
 METRIC_COLS = [
-    ("r1", "4-int R@1", True), ("real_sim", "real sim", False),
-    ("none_sim", "none sim", False), ("overall", "best 5-way", True),
+    ("r1", "real R@1", True), ("real_sim", "real sim", False),
+    ("none_sim", "none sim", False), ("overall", "best overall", True),
     ("none_recall", "none recall", True),
 ]
 
@@ -137,9 +137,9 @@ def print_verdicts(results):
         return float(np.mean([r[key] for r in results[cid]]))
 
     def verdict(title, left, right):
-        print(f"    {title:<26}: 4-int R@1 {mean(left,'r1')*100:.1f}% → {mean(right,'r1')*100:.1f}%, "
+        print(f"    {title:<26}: real R@1 {mean(left,'r1')*100:.1f}% → {mean(right,'r1')*100:.1f}%, "
               f"none_sim {mean(left,'none_sim'):.2f} → {mean(right,'none_sim'):.2f}, "
-              f"5-way {mean(left,'overall')*100:.1f}% → {mean(right,'overall')*100:.1f}%")
+              f"overall {mean(left,'overall')*100:.1f}% → {mean(right,'overall')*100:.1f}%")
 
     print("\n  verdicts:")
     verdict("A vs C (vocab effect)", "A", "C")

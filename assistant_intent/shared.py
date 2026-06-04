@@ -20,6 +20,21 @@ import numpy as np
 import torch
 
 
+def safe_matmul(a, b):
+    """a @ b, silencing numpy's SPURIOUS float32-matmul FPE warnings.
+
+    On some BLAS/SIMD backends numpy's float32 matmul sets the divide/overflow/
+    invalid floating-point flags even when every input is finite and bounded —
+    numpy then prints `divide by zero / invalid value encountered in matmul`.
+    The computed result is correct: our embeddings are always finite and |x| <= 1
+    (verified — the warning fires even on the random-init baseline, where the
+    prototypes are unit vectors). So we locally ignore those flags rather than
+    scrubbing data that was never actually bad.
+    """
+    with np.errstate(divide="ignore", over="ignore", invalid="ignore"):
+        return a @ b
+
+
 def build_prototypes(model, tok, train_groups, device):
     """prototype[intent] = L2-normalized MEAN of that intent's train embeddings.
 
@@ -43,7 +58,7 @@ def proto_recall1(model, tok, train_groups, test_groups, device) -> float:
     """
     Centroid classifier: prototype[intent] = L2-normalized MEAN of that intent's
     train embeddings. Each test query is labelled by its nearest prototype (cosine).
-    Returns Recall@1 over the held-out test queries (the 4 real intents).
+    Returns Recall@1 over the held-out test queries (the real intents).
 
     This is the honest generalization signal: test.json uses unseen phrasings AND
     unseen entities, so this number reflects pattern-learning, not memorization.
@@ -56,7 +71,7 @@ def proto_recall1(model, tok, train_groups, test_groups, device) -> float:
         q = model.encode(test_groups[it], tok, device=device)    # [m,D]
         if len(q) == 0:
             continue
-        pred = (q @ protos.T).argmax(axis=1)                     # nearest prototype
+        pred = safe_matmul(q, protos.T).argmax(axis=1)          # nearest prototype
         correct += int((pred == ti).sum())
         total += len(q)
     model.train()

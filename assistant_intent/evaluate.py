@@ -20,7 +20,7 @@ PART B  -  The `none` problem and the threshold fix
     threshold τ, answer `none`. We:
         1. show the top-similarity distributions (real vs none) — can τ separate them?
         2. sweep τ and print the real-acc / none-recall / overall-acc tradeoff
-        3. pick the τ that maximizes overall 5-way accuracy and report it
+        3. pick the τ that maximizes overall accuracy (real + none) and report it
     (Honesty caveat: τ is tuned on the same test set here for the demo; in a real
      pipeline you'd tune τ on a separate validation split.)
 
@@ -40,7 +40,7 @@ from tokenizer import SimpleTokenizer   # noqa: E402
 from model import build_model           # noqa: E402
 
 from data import load_by_intent       # noqa: E402  (json I/O lives in data.py)
-from shared import build_prototypes    # noqa: E402  (prototype classifier kernel)
+from shared import build_prototypes, safe_matmul   # noqa: E402  (kernel + FPE-safe matmul)
 from intents import REAL_INTENTS, NONE_ID   # noqa: E402  (taxonomy source of truth)
 
 HERE = os.path.dirname(__file__)
@@ -79,7 +79,7 @@ def evaluate_real(model, tok, train_groups, test_groups, device):
         if not texts:
             continue
         emb = model.encode(texts, tok, device=device)            # [m,D]
-        sims = emb @ protos.T                                    # [m,C]
+        sims = safe_matmul(emb, protos.T)                        # [m,C]
         ranked = np.argsort(-sims, axis=1)                       # [m,C], best first
 
         hit1 = (ranked[:, 0] == ti).astype(float)
@@ -108,7 +108,7 @@ def top_sims(model, tok, groups, protos, device):
             out[it] = (np.empty(0), np.empty(0, dtype=int))
             continue
         emb = model.encode(texts, tok, device=device)
-        sims = emb @ protos.T
+        sims = safe_matmul(emb, protos.T)
         out[it] = (sims.max(axis=1), sims.argmax(axis=1))
     return out
 
@@ -116,7 +116,7 @@ def top_sims(model, tok, groups, protos, device):
 def evaluate_none(model, tok, test_groups, none_texts, protos, intents, device):
     real_top = top_sims(model, tok, test_groups, protos, device)
     none_emb = model.encode(none_texts, tok, device=device) if none_texts else np.empty((0, protos.shape[1]))
-    none_sim = none_emb @ protos.T if len(none_emb) else np.empty((0, len(intents)))
+    none_sim = safe_matmul(none_emb, protos.T) if len(none_emb) else np.empty((0, len(intents)))
     none_max = none_sim.max(axis=1) if len(none_sim) else np.empty(0)
 
     # flatten real-query top sims + whether argmax intent is correct
@@ -213,7 +213,7 @@ def main():
     print(f"\n  best τ = {best['tau']:.2f}: "
           f"real_acc {best['real_acc']*100:.1f}%, "
           f"none_recall {best['none_recall']*100:.1f}%, "
-          f"overall 5-way {best['overall']*100:.1f}%")
+          f"overall (real+none) {best['overall']*100:.1f}%")
     print(f"\n  → adding the threshold recovers `none` from 0.0% to "
           f"{best['none_recall']*100:.1f}% while keeping real-intent accuracy at "
           f"{best['real_acc']*100:.1f}%.")
