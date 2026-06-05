@@ -376,6 +376,14 @@
     "intent": "media"
   },
   {
+    "text": "i feel like listening to some jazz",
+    "intent": "media"
+  },
+  {
+    "text": "i'd like to hear the beatles",
+    "intent": "media"
+  },
+  {
     "text": "play pop",
     "intent": "media"
   },
@@ -624,6 +632,246 @@
     "intent": "media"
   },
   {
+    "text": "i'd like to hear some hip hop",
+    "intent": "media"
+  },
+  {
+    "text": "i'd like to hear some classical music",
+    "intent": "media"
+  },
+  {
+    "text": "i'd like to hear some lofi beats",
+    "intent": "media"
+  },
+  {
+    "text": "i'd like to hear some edm",
+    "intent": "media"
+  },
+  {
+    "text": "i'd like to hear some country",
+    "intent": "media"
+  },
+  {
+    "text": "i'd like to hear some jazz",
+    "intent": "media"
+  },
+  {
+    "text": "i'd like to hear some rock",
+    "intent": "media"
+  },
+  {
+    "text": "i'd like to hear some pop",
+    "intent": "media"
+  },
+  {
+    "text": "i'm in the mood for some jazz",
+    "intent": "media"
+  },
+  {
+    "text": "i'm in the mood for some edm",
+    "intent": "media"
+  },
+  {
+    "text": "i'm in the mood for some country",
+    "intent": "media"
+  },
+  {
+    "text": "i'm in the mood for some hip hop",
+    "intent": "media"
+  },
+  {
+    "text": "i'm in the mood for some rock",
+    "intent": "media"
+  },
+  {
+    "text": "i'm in the mood for some pop",
+    "intent": "media"
+  },
+  {
+    "text": "i'm in the mood for some classical music",
+    "intent": "media"
+  },
+  {
+    "text": "i'm in the mood for some lofi beats",
+    "intent": "media"
+  },
+  {
+    "text": "can you put on some hip hop on apple music",
+    "intent": "media"
+  },
+  {
+    "text": "can you put on some rock on youtube music",
+    "intent": "media"
+  },
+  {
+    "text": "can you put on some classical music on apple music",
+    "intent": "media"
+  },
+  {
+    "text": "can you put on some edm on apple music",
+    "intent": "media"
+  },
+  {
+    "text": "can you put on some classical music on soundcloud",
+    "intent": "media"
+  },
+  {
+    "text": "can you put on some rock on spotify",
+    "intent": "media"
+  },
+  {
+    "text": "can you put on some jazz",
+    "intent": "media"
+  },
+  {
+    "text": "can you put on some lofi beats on youtube music",
+    "intent": "media"
+  },
+  {
+    "text": "can you put on some lofi beats on soundcloud",
+    "intent": "media"
+  },
+  {
+    "text": "can you put on some hip hop",
+    "intent": "media"
+  },
+  {
+    "text": "can you put on some hip hop on spotify",
+    "intent": "media"
+  },
+  {
+    "text": "can you put on some hip hop on soundcloud",
+    "intent": "media"
+  },
+  {
+    "text": "can you put on some edm",
+    "intent": "media"
+  },
+  {
+    "text": "can you put on some country on youtube music",
+    "intent": "media"
+  },
+  {
+    "text": "can you put on some country on spotify",
+    "intent": "media"
+  },
+  {
+    "text": "can you put on some jazz on soundcloud",
+    "intent": "media"
+  },
+  {
+    "text": "let's hear some country",
+    "intent": "media"
+  },
+  {
+    "text": "let's hear some lofi beats",
+    "intent": "media"
+  },
+  {
+    "text": "let's hear some edm",
+    "intent": "media"
+  },
+  {
+    "text": "let's hear some hip hop",
+    "intent": "media"
+  },
+  {
+    "text": "let's hear some pop",
+    "intent": "media"
+  },
+  {
+    "text": "let's hear some jazz",
+    "intent": "media"
+  },
+  {
+    "text": "let's hear some rock",
+    "intent": "media"
+  },
+  {
+    "text": "let's hear some classical music",
+    "intent": "media"
+  },
+  {
+    "text": "throw on my focus playlist",
+    "intent": "media"
+  },
+  {
+    "text": "throw on my workout playlist",
+    "intent": "media"
+  },
+  {
+    "text": "throw on my chill playlist",
+    "intent": "media"
+  },
+  {
+    "text": "throw on my road trip playlist",
+    "intent": "media"
+  },
+  {
+    "text": "queue up coldplay on apple music",
+    "intent": "media"
+  },
+  {
+    "text": "queue up drake",
+    "intent": "media"
+  },
+  {
+    "text": "queue up adele on soundcloud",
+    "intent": "media"
+  },
+  {
+    "text": "queue up taylor swift",
+    "intent": "media"
+  },
+  {
+    "text": "queue up the beatles on apple music",
+    "intent": "media"
+  },
+  {
+    "text": "queue up coldplay on soundcloud",
+    "intent": "media"
+  },
+  {
+    "text": "queue up drake on soundcloud",
+    "intent": "media"
+  },
+  {
+    "text": "queue up adele on spotify",
+    "intent": "media"
+  },
+  {
+    "text": "queue up kendrick lamar on spotify",
+    "intent": "media"
+  },
+  {
+    "text": "queue up billie eilish on spotify",
+    "intent": "media"
+  },
+  {
+    "text": "queue up the beatles on youtube music",
+    "intent": "media"
+  },
+  {
+    "text": "queue up coldplay on youtube music",
+    "intent": "media"
+  },
+  {
+    "text": "queue up the beatles on soundcloud",
+    "intent": "media"
+  },
+  {
+    "text": "queue up adele on apple music",
+    "intent": "media"
+  },
+  {
+    "text": "queue up the beatles on spotify",
+    "intent": "media"
+  },
+  {
+    "text": "queue up kendrick lamar",
+    "intent": "media"
+  },
+  {
     "text": "turn on the living room lights",
     "intent": "smart_home"
   },
@@ -684,19 +932,11 @@
     "intent": "smart_home"
   },
   {
-    "text": "turn off the kitchen lights",
+    "text": "turn off the hallway lights",
     "intent": "smart_home"
   },
   {
-    "text": "turn on the living room light",
-    "intent": "smart_home"
-  },
-  {
-    "text": "turn off the garage light",
-    "intent": "smart_home"
-  },
-  {
-    "text": "turn on the kitchen ceiling light",
+    "text": "turn off the bedroom ceiling light",
     "intent": "smart_home"
   },
   {
@@ -704,31 +944,35 @@
     "intent": "smart_home"
   },
   {
-    "text": "turn off the bathroom lights",
+    "text": "turn on the living room light",
     "intent": "smart_home"
   },
   {
-    "text": "turn off the bathroom light",
+    "text": "turn off the dining room lamp",
     "intent": "smart_home"
   },
   {
-    "text": "turn off the bedroom light",
+    "text": "turn on the bathroom ceiling light",
     "intent": "smart_home"
   },
   {
-    "text": "turn on the office lamp",
+    "text": "turn off the office lamp",
     "intent": "smart_home"
   },
   {
-    "text": "turn off the kitchen light",
+    "text": "turn off the living room ceiling light",
     "intent": "smart_home"
   },
   {
-    "text": "turn off the dining room ceiling light",
+    "text": "turn off the living room lights",
     "intent": "smart_home"
   },
   {
-    "text": "turn on the bedroom ceiling light",
+    "text": "turn on the hallway light",
+    "intent": "smart_home"
+  },
+  {
+    "text": "turn off the kitchen lights",
     "intent": "smart_home"
   },
   {
@@ -736,55 +980,35 @@
     "intent": "smart_home"
   },
   {
-    "text": "turn off the dining room lights",
+    "text": "turn on the garage lamp",
     "intent": "smart_home"
   },
   {
-    "text": "turn off the hallway ceiling light",
+    "text": "turn on the living room lamp",
     "intent": "smart_home"
   },
   {
-    "text": "switch off the lamp in the bedroom",
+    "text": "turn off the bathroom lamp",
     "intent": "smart_home"
   },
   {
-    "text": "switch off the ceiling light in the bathroom",
+    "text": "switch off the ceiling light in the living room",
     "intent": "smart_home"
   },
   {
-    "text": "turn on the lamp in the garage",
+    "text": "switch on the light in the kitchen",
     "intent": "smart_home"
   },
   {
-    "text": "turn on the lights in the kitchen",
+    "text": "turn on the lights in the living room",
     "intent": "smart_home"
   },
   {
-    "text": "turn off the lights in the bathroom",
+    "text": "switch on the lights in the kitchen",
     "intent": "smart_home"
   },
   {
-    "text": "switch off the ceiling light in the kitchen",
-    "intent": "smart_home"
-  },
-  {
-    "text": "switch on the ceiling light in the bathroom",
-    "intent": "smart_home"
-  },
-  {
-    "text": "switch off the light in the bathroom",
-    "intent": "smart_home"
-  },
-  {
-    "text": "switch off the lamp in the bathroom",
-    "intent": "smart_home"
-  },
-  {
-    "text": "switch on the light in the dining room",
-    "intent": "smart_home"
-  },
-  {
-    "text": "turn on the lamp in the office",
+    "text": "switch off the ceiling light in the dining room",
     "intent": "smart_home"
   },
   {
@@ -792,19 +1016,55 @@
     "intent": "smart_home"
   },
   {
-    "text": "switch off the ceiling light in the hallway",
+    "text": "switch on the lamp in the bathroom",
     "intent": "smart_home"
   },
   {
-    "text": "switch on the lamp in the bedroom",
+    "text": "turn on the light in the bathroom",
     "intent": "smart_home"
   },
   {
-    "text": "switch on the ceiling light in the bedroom",
+    "text": "turn on the light in the dining room",
     "intent": "smart_home"
   },
   {
-    "text": "turn off the ceiling light in the garage",
+    "text": "switch off the lamp in the office",
+    "intent": "smart_home"
+  },
+  {
+    "text": "switch off the lights in the kitchen",
+    "intent": "smart_home"
+  },
+  {
+    "text": "switch off the light in the bathroom",
+    "intent": "smart_home"
+  },
+  {
+    "text": "switch on the lights in the bathroom",
+    "intent": "smart_home"
+  },
+  {
+    "text": "turn on the ceiling light in the office",
+    "intent": "smart_home"
+  },
+  {
+    "text": "turn off the lights in the dining room",
+    "intent": "smart_home"
+  },
+  {
+    "text": "ceiling light off",
+    "intent": "smart_home"
+  },
+  {
+    "text": "light off",
+    "intent": "smart_home"
+  },
+  {
+    "text": "ceiling light on",
+    "intent": "smart_home"
+  },
+  {
+    "text": "lamp off",
     "intent": "smart_home"
   },
   {
@@ -816,47 +1076,19 @@
     "intent": "smart_home"
   },
   {
-    "text": "ceiling light on",
-    "intent": "smart_home"
-  },
-  {
     "text": "lamp on",
     "intent": "smart_home"
   },
   {
-    "text": "lamp off",
+    "text": "dim the bedroom light to 30 percent",
     "intent": "smart_home"
   },
   {
-    "text": "light off",
+    "text": "dim the hallway lights to 60 percent",
     "intent": "smart_home"
   },
   {
-    "text": "ceiling light off",
-    "intent": "smart_home"
-  },
-  {
-    "text": "dim the dining room lamp to 10 percent",
-    "intent": "smart_home"
-  },
-  {
-    "text": "dim the dining room light to 80 percent",
-    "intent": "smart_home"
-  },
-  {
-    "text": "dim the kitchen ceiling light to 40 percent",
-    "intent": "smart_home"
-  },
-  {
-    "text": "dim the dining room ceiling light to 30 percent",
-    "intent": "smart_home"
-  },
-  {
-    "text": "dim the garage lamp to 10 percent",
-    "intent": "smart_home"
-  },
-  {
-    "text": "dim the hallway lights to 70 percent",
+    "text": "dim the dining room lights to 50 percent",
     "intent": "smart_home"
   },
   {
@@ -864,59 +1096,59 @@
     "intent": "smart_home"
   },
   {
-    "text": "dim the bedroom lights to 30 percent",
+    "text": "dim the office lights to 40 percent",
     "intent": "smart_home"
   },
   {
-    "text": "dim the office light to 60 percent",
+    "text": "dim the hallway lights to 10 percent",
     "intent": "smart_home"
   },
   {
-    "text": "dim the bathroom lights to 10 percent",
+    "text": "dim the living room ceiling light to 50 percent",
     "intent": "smart_home"
   },
   {
-    "text": "dim the hallway ceiling light to 50 percent",
+    "text": "dim the office light to 70 percent",
     "intent": "smart_home"
   },
   {
-    "text": "dim the dining room light to 40 percent",
+    "text": "dim the garage lights to 10 percent",
     "intent": "smart_home"
   },
   {
-    "text": "dim the office lights to 60 percent",
+    "text": "dim the kitchen light to 70 percent",
     "intent": "smart_home"
   },
   {
-    "text": "dim the bedroom lamp to 80 percent",
+    "text": "dim the bathroom light to 60 percent",
     "intent": "smart_home"
   },
   {
-    "text": "dim the bathroom lamp to 10 percent",
+    "text": "dim the living room ceiling light to 40 percent",
     "intent": "smart_home"
   },
   {
-    "text": "dim the hallway lights to 40 percent",
+    "text": "dim the office ceiling light to 10 percent",
     "intent": "smart_home"
   },
   {
-    "text": "make the hallway darker",
+    "text": "dim the dining room ceiling light to 80 percent",
     "intent": "smart_home"
   },
   {
-    "text": "make the bedroom darker",
+    "text": "dim the kitchen lights to 20 percent",
     "intent": "smart_home"
   },
   {
-    "text": "make the kitchen darker",
+    "text": "dim the bedroom lights to 70 percent",
     "intent": "smart_home"
   },
   {
-    "text": "make the dining room brighter",
+    "text": "make the bathroom darker",
     "intent": "smart_home"
   },
   {
-    "text": "make the living room darker",
+    "text": "make the hallway brighter",
     "intent": "smart_home"
   },
   {
@@ -924,7 +1156,39 @@
     "intent": "smart_home"
   },
   {
-    "text": "make the dining room darker",
+    "text": "make the bedroom darker",
+    "intent": "smart_home"
+  },
+  {
+    "text": "make the living room darker",
+    "intent": "smart_home"
+  },
+  {
+    "text": "make the dining room brighter",
+    "intent": "smart_home"
+  },
+  {
+    "text": "make the living room brighter",
+    "intent": "smart_home"
+  },
+  {
+    "text": "make the kitchen darker",
+    "intent": "smart_home"
+  },
+  {
+    "text": "make the hallway darker",
+    "intent": "smart_home"
+  },
+  {
+    "text": "make the garage darker",
+    "intent": "smart_home"
+  },
+  {
+    "text": "make the office darker",
+    "intent": "smart_home"
+  },
+  {
+    "text": "make the bathroom brighter",
     "intent": "smart_home"
   },
   {
@@ -936,87 +1200,47 @@
     "intent": "smart_home"
   },
   {
-    "text": "make the garage darker",
-    "intent": "smart_home"
-  },
-  {
-    "text": "make the hallway brighter",
-    "intent": "smart_home"
-  },
-  {
-    "text": "make the bathroom brighter",
-    "intent": "smart_home"
-  },
-  {
-    "text": "make the bathroom darker",
-    "intent": "smart_home"
-  },
-  {
     "text": "make the garage brighter",
     "intent": "smart_home"
   },
   {
-    "text": "make the living room brighter",
+    "text": "make the dining room darker",
     "intent": "smart_home"
   },
   {
-    "text": "make the office darker",
+    "text": "set the office lights to warm white",
     "intent": "smart_home"
   },
   {
-    "text": "set the bedroom lights to warm white",
+    "text": "set the garage lamp to daylight",
     "intent": "smart_home"
   },
   {
-    "text": "set the dining room lamp to daylight",
+    "text": "set the hallway light to warm white",
     "intent": "smart_home"
   },
   {
-    "text": "set the bathroom lights to daylight",
+    "text": "set the garage ceiling light to warm white",
     "intent": "smart_home"
   },
   {
-    "text": "set the bathroom lamp to daylight",
+    "text": "set the living room lights to cool white",
     "intent": "smart_home"
   },
   {
-    "text": "set the bedroom ceiling light to warm white",
+    "text": "set the hallway lamp to warm white",
     "intent": "smart_home"
   },
   {
-    "text": "set the living room light to cool white",
+    "text": "set the bathroom lamp to cool white",
     "intent": "smart_home"
   },
   {
-    "text": "set the office lamp to cool white",
+    "text": "set the kitchen light to warm white",
     "intent": "smart_home"
   },
   {
-    "text": "set the garage light to cool white",
-    "intent": "smart_home"
-  },
-  {
-    "text": "set the bathroom lights to cool white",
-    "intent": "smart_home"
-  },
-  {
-    "text": "set the dining room lights to warm white",
-    "intent": "smart_home"
-  },
-  {
-    "text": "set the dining room lamp to cool white",
-    "intent": "smart_home"
-  },
-  {
-    "text": "set the living room ceiling light to warm white",
-    "intent": "smart_home"
-  },
-  {
-    "text": "set the office lights to daylight",
-    "intent": "smart_home"
-  },
-  {
-    "text": "set the bedroom lights to daylight",
+    "text": "set the office lights to cool white",
     "intent": "smart_home"
   },
   {
@@ -1024,7 +1248,27 @@
     "intent": "smart_home"
   },
   {
-    "text": "set the garage lamp to daylight",
+    "text": "set the dining room ceiling light to daylight",
+    "intent": "smart_home"
+  },
+  {
+    "text": "set the living room lights to daylight",
+    "intent": "smart_home"
+  },
+  {
+    "text": "set the bedroom lamp to cool white",
+    "intent": "smart_home"
+  },
+  {
+    "text": "set the hallway lamp to cool white",
+    "intent": "smart_home"
+  },
+  {
+    "text": "set the bathroom lights to daylight",
+    "intent": "smart_home"
+  },
+  {
+    "text": "set the bedroom lamp to warm white",
     "intent": "smart_home"
   },
   {
@@ -1088,47 +1332,55 @@
     "intent": "productivity"
   },
   {
-    "text": "schedule a meeting with sarah on friday",
+    "text": "schedule a call with mom tomorrow",
     "intent": "productivity"
   },
   {
-    "text": "schedule a appointment with john at 4pm",
+    "text": "schedule a appointment with the team next week",
     "intent": "productivity"
   },
   {
-    "text": "schedule a call with dad next week",
+    "text": "schedule a call with the team tomorrow",
     "intent": "productivity"
   },
   {
-    "text": "schedule a meeting with the team next week",
+    "text": "schedule a appointment with john tomorrow",
     "intent": "productivity"
   },
   {
-    "text": "schedule a meeting with alex on saturday",
+    "text": "schedule a meeting with the team on monday",
     "intent": "productivity"
   },
   {
-    "text": "schedule a meeting with alex next week",
+    "text": "schedule a meeting with the team on saturday",
     "intent": "productivity"
   },
   {
-    "text": "schedule a call with dad on monday",
+    "text": "schedule a appointment with my boss on monday",
     "intent": "productivity"
   },
   {
-    "text": "schedule a call with john on saturday",
+    "text": "schedule a call with john on friday",
     "intent": "productivity"
   },
   {
-    "text": "schedule a appointment with mom next week",
+    "text": "schedule a call with john on monday",
     "intent": "productivity"
   },
   {
-    "text": "schedule a appointment with alex at 4pm",
+    "text": "schedule a meeting with alex on friday",
     "intent": "productivity"
   },
   {
-    "text": "schedule a meeting with my boss next week",
+    "text": "schedule a call with mom at 3",
+    "intent": "productivity"
+  },
+  {
+    "text": "schedule a meeting with my boss",
+    "intent": "productivity"
+  },
+  {
+    "text": "schedule a call with my landlord next week",
     "intent": "productivity"
   },
   {
@@ -1136,19 +1388,11 @@
     "intent": "productivity"
   },
   {
-    "text": "schedule a call with my landlord this afternoon",
+    "text": "schedule a appointment with my boss this afternoon",
     "intent": "productivity"
   },
   {
-    "text": "schedule a appointment with john next week",
-    "intent": "productivity"
-  },
-  {
-    "text": "schedule a meeting with john on saturday",
-    "intent": "productivity"
-  },
-  {
-    "text": "schedule a call with my boss on friday",
+    "text": "schedule a call with john on saturday",
     "intent": "productivity"
   },
   {
@@ -1156,27 +1400,7 @@
     "intent": "productivity"
   },
   {
-    "text": "add an event this afternoon",
-    "intent": "productivity"
-  },
-  {
-    "text": "add an event tomorrow",
-    "intent": "productivity"
-  },
-  {
-    "text": "add a dentist appointment tomorrow",
-    "intent": "productivity"
-  },
-  {
-    "text": "add a dentist appointment at 4pm",
-    "intent": "productivity"
-  },
-  {
-    "text": "add a meeting",
-    "intent": "productivity"
-  },
-  {
-    "text": "add an event at 4pm",
+    "text": "add an event on friday",
     "intent": "productivity"
   },
   {
@@ -1184,7 +1408,7 @@
     "intent": "productivity"
   },
   {
-    "text": "add a meeting next week",
+    "text": "add an event next week",
     "intent": "productivity"
   },
   {
@@ -1192,15 +1416,39 @@
     "intent": "productivity"
   },
   {
-    "text": "add a dentist appointment on saturday",
-    "intent": "productivity"
-  },
-  {
-    "text": "add a meeting tomorrow",
-    "intent": "productivity"
-  },
-  {
     "text": "add an event at 3",
+    "intent": "productivity"
+  },
+  {
+    "text": "add a meeting",
+    "intent": "productivity"
+  },
+  {
+    "text": "add a dentist appointment on monday",
+    "intent": "productivity"
+  },
+  {
+    "text": "add a meeting this afternoon",
+    "intent": "productivity"
+  },
+  {
+    "text": "add a dentist appointment this afternoon",
+    "intent": "productivity"
+  },
+  {
+    "text": "add an event tomorrow",
+    "intent": "productivity"
+  },
+  {
+    "text": "add an event at 4pm",
+    "intent": "productivity"
+  },
+  {
+    "text": "add a dentist appointment tomorrow",
+    "intent": "productivity"
+  },
+  {
+    "text": "add a dentist appointment at 3",
     "intent": "productivity"
   },
   {
@@ -1208,39 +1456,11 @@
     "intent": "productivity"
   },
   {
-    "text": "add a dentist appointment",
-    "intent": "productivity"
-  },
-  {
-    "text": "add a meeting on friday",
-    "intent": "productivity"
-  },
-  {
-    "text": "what's on my calendar this week",
-    "intent": "productivity"
-  },
-  {
     "text": "what's on my calendar tomorrow",
     "intent": "productivity"
   },
   {
-    "text": "am i free",
-    "intent": "productivity"
-  },
-  {
-    "text": "am i free at 3",
-    "intent": "productivity"
-  },
-  {
-    "text": "am i free on friday",
-    "intent": "productivity"
-  },
-  {
-    "text": "am i free this afternoon",
-    "intent": "productivity"
-  },
-  {
-    "text": "am i free on saturday",
+    "text": "what's on my calendar this week",
     "intent": "productivity"
   },
   {
@@ -1252,15 +1472,31 @@
     "intent": "productivity"
   },
   {
-    "text": "am i free at 4pm",
-    "intent": "productivity"
-  },
-  {
     "text": "am i free on monday",
     "intent": "productivity"
   },
   {
-    "text": "remind me to book the venue",
+    "text": "am i free on saturday",
+    "intent": "productivity"
+  },
+  {
+    "text": "am i free at 3",
+    "intent": "productivity"
+  },
+  {
+    "text": "am i free",
+    "intent": "productivity"
+  },
+  {
+    "text": "am i free this afternoon",
+    "intent": "productivity"
+  },
+  {
+    "text": "am i free on friday",
+    "intent": "productivity"
+  },
+  {
+    "text": "am i free at 4pm",
     "intent": "productivity"
   },
   {
@@ -1268,15 +1504,11 @@
     "intent": "productivity"
   },
   {
+    "text": "remind me to book the venue",
+    "intent": "productivity"
+  },
+  {
     "text": "remind me to renew my passport",
-    "intent": "productivity"
-  },
-  {
-    "text": "remind me to send the invoice",
-    "intent": "productivity"
-  },
-  {
-    "text": "remind me to take out the trash",
     "intent": "productivity"
   },
   {
@@ -1284,63 +1516,15 @@
     "intent": "productivity"
   },
   {
-    "text": "move my 1pm call to 2:30",
+    "text": "remind me to take out the trash",
     "intent": "productivity"
   },
   {
-    "text": "move my 10am meeting to 3pm",
+    "text": "remind me to send the invoice",
     "intent": "productivity"
   },
   {
-    "text": "move my 9am meeting to 10am",
-    "intent": "productivity"
-  },
-  {
-    "text": "move my noon call to 3pm",
-    "intent": "productivity"
-  },
-  {
-    "text": "move my 3pm meeting to 3pm",
-    "intent": "productivity"
-  },
-  {
-    "text": "move my 5 o'clock call to 1pm",
-    "intent": "productivity"
-  },
-  {
-    "text": "move my 2:30 call to 5 o'clock",
-    "intent": "productivity"
-  },
-  {
-    "text": "move my 5 o'clock meeting to 4pm",
-    "intent": "productivity"
-  },
-  {
-    "text": "move my 1pm meeting to 4pm",
-    "intent": "productivity"
-  },
-  {
-    "text": "move my 9am meeting to 5 o'clock",
-    "intent": "productivity"
-  },
-  {
-    "text": "move my 10am meeting to 2:30",
-    "intent": "productivity"
-  },
-  {
-    "text": "move my 5 o'clock call to 2:30",
-    "intent": "productivity"
-  },
-  {
-    "text": "move my 3pm meeting to 10am",
-    "intent": "productivity"
-  },
-  {
-    "text": "move my 4pm call to 1pm",
-    "intent": "productivity"
-  },
-  {
-    "text": "move my 4pm meeting to 1pm",
+    "text": "move my noon call to 2:30",
     "intent": "productivity"
   },
   {
@@ -1348,7 +1532,59 @@
     "intent": "productivity"
   },
   {
-    "text": "cancel my 10am meeting",
+    "text": "move my 5 o'clock meeting to noon",
+    "intent": "productivity"
+  },
+  {
+    "text": "move my 9am call to 1pm",
+    "intent": "productivity"
+  },
+  {
+    "text": "move my 10am meeting to 9am",
+    "intent": "productivity"
+  },
+  {
+    "text": "move my 3pm call to 4pm",
+    "intent": "productivity"
+  },
+  {
+    "text": "move my 3pm call to 3pm",
+    "intent": "productivity"
+  },
+  {
+    "text": "move my 9am meeting to 2:30",
+    "intent": "productivity"
+  },
+  {
+    "text": "move my 4pm meeting to 3pm",
+    "intent": "productivity"
+  },
+  {
+    "text": "move my 1pm call to 10am",
+    "intent": "productivity"
+  },
+  {
+    "text": "move my 1pm meeting to 2:30",
+    "intent": "productivity"
+  },
+  {
+    "text": "move my 4pm call to 1pm",
+    "intent": "productivity"
+  },
+  {
+    "text": "move my 10am call to 3pm",
+    "intent": "productivity"
+  },
+  {
+    "text": "move my 3pm meeting to 1pm",
+    "intent": "productivity"
+  },
+  {
+    "text": "move my 1pm meeting to 1pm",
+    "intent": "productivity"
+  },
+  {
+    "text": "move my 3pm call to noon",
     "intent": "productivity"
   },
   {
@@ -1356,35 +1592,7 @@
     "intent": "productivity"
   },
   {
-    "text": "cancel my 2:30 appointment",
-    "intent": "productivity"
-  },
-  {
-    "text": "cancel my 9am meeting",
-    "intent": "productivity"
-  },
-  {
-    "text": "cancel my 1pm appointment",
-    "intent": "productivity"
-  },
-  {
-    "text": "cancel my noon meeting",
-    "intent": "productivity"
-  },
-  {
-    "text": "cancel my noon appointment",
-    "intent": "productivity"
-  },
-  {
-    "text": "cancel my 2:30 meeting",
-    "intent": "productivity"
-  },
-  {
-    "text": "cancel my 10am appointment",
-    "intent": "productivity"
-  },
-  {
-    "text": "cancel my 4pm appointment",
+    "text": "cancel my 3pm appointment",
     "intent": "productivity"
   },
   {
@@ -1392,11 +1600,7 @@
     "intent": "productivity"
   },
   {
-    "text": "cancel my 3pm appointment",
-    "intent": "productivity"
-  },
-  {
-    "text": "cancel my 9am appointment",
+    "text": "cancel my noon meeting",
     "intent": "productivity"
   },
   {
@@ -1404,7 +1608,43 @@
     "intent": "productivity"
   },
   {
+    "text": "cancel my 10am appointment",
+    "intent": "productivity"
+  },
+  {
+    "text": "cancel my 1pm appointment",
+    "intent": "productivity"
+  },
+  {
     "text": "cancel my 1pm meeting",
+    "intent": "productivity"
+  },
+  {
+    "text": "cancel my 4pm appointment",
+    "intent": "productivity"
+  },
+  {
+    "text": "cancel my 9am meeting",
+    "intent": "productivity"
+  },
+  {
+    "text": "cancel my 2:30 appointment",
+    "intent": "productivity"
+  },
+  {
+    "text": "cancel my 2:30 meeting",
+    "intent": "productivity"
+  },
+  {
+    "text": "cancel my 9am appointment",
+    "intent": "productivity"
+  },
+  {
+    "text": "cancel my 10am meeting",
+    "intent": "productivity"
+  },
+  {
+    "text": "cancel my noon appointment",
     "intent": "productivity"
   },
   {
@@ -1412,11 +1652,11 @@
     "intent": "productivity"
   },
   {
-    "text": "what's my first meeting",
+    "text": "what's my next appointment",
     "intent": "productivity"
   },
   {
-    "text": "what's my next appointment",
+    "text": "what's my first meeting",
     "intent": "productivity"
   },
   {
@@ -1480,15 +1720,7 @@
     "intent": "communication"
   },
   {
-    "text": "call alex",
-    "intent": "communication"
-  },
-  {
-    "text": "call john",
-    "intent": "communication"
-  },
-  {
-    "text": "call dad",
+    "text": "call my landlord",
     "intent": "communication"
   },
   {
@@ -1496,19 +1728,19 @@
     "intent": "communication"
   },
   {
-    "text": "call my landlord",
+    "text": "call dad",
+    "intent": "communication"
+  },
+  {
+    "text": "call john",
+    "intent": "communication"
+  },
+  {
+    "text": "call alex",
     "intent": "communication"
   },
   {
     "text": "call the team",
-    "intent": "communication"
-  },
-  {
-    "text": "give my boss a call",
-    "intent": "communication"
-  },
-  {
-    "text": "give mom a call",
     "intent": "communication"
   },
   {
@@ -1524,6 +1756,14 @@
     "intent": "communication"
   },
   {
+    "text": "give mom a call",
+    "intent": "communication"
+  },
+  {
+    "text": "give my boss a call",
+    "intent": "communication"
+  },
+  {
     "text": "give john a call",
     "intent": "communication"
   },
@@ -1532,63 +1772,11 @@
     "intent": "communication"
   },
   {
-    "text": "text dad about dinner",
+    "text": "text dad that i'm on my way",
     "intent": "communication"
   },
   {
-    "text": "text my boss about the report",
-    "intent": "communication"
-  },
-  {
-    "text": "text john the meeting notes",
-    "intent": "communication"
-  },
-  {
-    "text": "text the team that i'm on my way",
-    "intent": "communication"
-  },
-  {
-    "text": "text mom that i'll be late",
-    "intent": "communication"
-  },
-  {
-    "text": "text my boss that i'm on my way",
-    "intent": "communication"
-  },
-  {
-    "text": "text the team about dinner",
-    "intent": "communication"
-  },
-  {
-    "text": "text john that i'm on my way",
-    "intent": "communication"
-  },
-  {
-    "text": "text john that i'll be late",
-    "intent": "communication"
-  },
-  {
-    "text": "text sarah about the report",
-    "intent": "communication"
-  },
-  {
-    "text": "text my boss that i'll be late",
-    "intent": "communication"
-  },
-  {
-    "text": "text my boss the meeting notes",
-    "intent": "communication"
-  },
-  {
-    "text": "text the team about the report",
-    "intent": "communication"
-  },
-  {
-    "text": "text sarah the meeting notes",
-    "intent": "communication"
-  },
-  {
-    "text": "text dad about the report",
+    "text": "text my boss about dinner",
     "intent": "communication"
   },
   {
@@ -1596,11 +1784,63 @@
     "intent": "communication"
   },
   {
-    "text": "send john a text",
+    "text": "text my boss to say happy birthday",
     "intent": "communication"
   },
   {
-    "text": "send sarah a message",
+    "text": "text dad about dinner",
+    "intent": "communication"
+  },
+  {
+    "text": "text the team the meeting notes",
+    "intent": "communication"
+  },
+  {
+    "text": "text the team to say happy birthday",
+    "intent": "communication"
+  },
+  {
+    "text": "text alex that i'll be late",
+    "intent": "communication"
+  },
+  {
+    "text": "text sarah the meeting notes",
+    "intent": "communication"
+  },
+  {
+    "text": "text my landlord that i'll be late",
+    "intent": "communication"
+  },
+  {
+    "text": "text my landlord about dinner",
+    "intent": "communication"
+  },
+  {
+    "text": "text my boss that i'll be late",
+    "intent": "communication"
+  },
+  {
+    "text": "text john the meeting notes",
+    "intent": "communication"
+  },
+  {
+    "text": "text john that i'll be late",
+    "intent": "communication"
+  },
+  {
+    "text": "text dad to say happy birthday",
+    "intent": "communication"
+  },
+  {
+    "text": "text sarah about dinner",
+    "intent": "communication"
+  },
+  {
+    "text": "send my boss a message",
+    "intent": "communication"
+  },
+  {
+    "text": "send john a text",
     "intent": "communication"
   },
   {
@@ -1608,7 +1848,27 @@
     "intent": "communication"
   },
   {
+    "text": "send dad a text",
+    "intent": "communication"
+  },
+  {
+    "text": "send john a message",
+    "intent": "communication"
+  },
+  {
+    "text": "send my landlord a message",
+    "intent": "communication"
+  },
+  {
     "text": "send mom a message",
+    "intent": "communication"
+  },
+  {
+    "text": "send sarah a text",
+    "intent": "communication"
+  },
+  {
+    "text": "send alex a text",
     "intent": "communication"
   },
   {
@@ -1620,11 +1880,7 @@
     "intent": "communication"
   },
   {
-    "text": "send my landlord a text",
-    "intent": "communication"
-  },
-  {
-    "text": "send john a message",
+    "text": "send the team a message",
     "intent": "communication"
   },
   {
@@ -1632,87 +1888,27 @@
     "intent": "communication"
   },
   {
-    "text": "send dad a text",
-    "intent": "communication"
-  },
-  {
     "text": "send alex a message",
     "intent": "communication"
   },
   {
-    "text": "send alex a text",
+    "text": "send my landlord a text",
     "intent": "communication"
   },
   {
-    "text": "send sarah a text",
+    "text": "send sarah a message",
     "intent": "communication"
   },
   {
-    "text": "send my boss a message",
+    "text": "email the team the meeting notes",
     "intent": "communication"
   },
   {
-    "text": "send the team a message",
+    "text": "email dad to say happy birthday",
     "intent": "communication"
   },
   {
-    "text": "send my landlord a message",
-    "intent": "communication"
-  },
-  {
-    "text": "email the team that i'll be late",
-    "intent": "communication"
-  },
-  {
-    "text": "email my boss that i'm on my way",
-    "intent": "communication"
-  },
-  {
-    "text": "email john that i'm on my way",
-    "intent": "communication"
-  },
-  {
-    "text": "email my boss the meeting notes",
-    "intent": "communication"
-  },
-  {
-    "text": "email mom the meeting notes",
-    "intent": "communication"
-  },
-  {
-    "text": "email my boss about the report",
-    "intent": "communication"
-  },
-  {
-    "text": "email the team to say happy birthday",
-    "intent": "communication"
-  },
-  {
-    "text": "email dad that i'll be late",
-    "intent": "communication"
-  },
-  {
-    "text": "email sarah that i'll be late",
-    "intent": "communication"
-  },
-  {
-    "text": "email john the meeting notes",
-    "intent": "communication"
-  },
-  {
-    "text": "email john that i'll be late",
-    "intent": "communication"
-  },
-  {
-    "text": "email sarah about dinner",
-    "intent": "communication"
-  },
-  {
-    "text": "email sarah about the report",
-    "intent": "communication"
-  },
-  {
-    "text": "email john about the report",
+    "text": "email my landlord about the report",
     "intent": "communication"
   },
   {
@@ -1720,27 +1916,51 @@
     "intent": "communication"
   },
   {
-    "text": "email alex about the report",
+    "text": "email my landlord to say happy birthday",
+    "intent": "communication"
+  },
+  {
+    "text": "email mom that i'm on my way",
+    "intent": "communication"
+  },
+  {
+    "text": "email sarah that i'm on my way",
+    "intent": "communication"
+  },
+  {
+    "text": "email dad that i'll be late",
+    "intent": "communication"
+  },
+  {
+    "text": "email mom about dinner",
+    "intent": "communication"
+  },
+  {
+    "text": "email my landlord that i'll be late",
+    "intent": "communication"
+  },
+  {
+    "text": "email my boss about dinner",
+    "intent": "communication"
+  },
+  {
+    "text": "email the team to say happy birthday",
+    "intent": "communication"
+  },
+  {
+    "text": "email mom about the report",
+    "intent": "communication"
+  },
+  {
+    "text": "email alex the meeting notes",
+    "intent": "communication"
+  },
+  {
+    "text": "email sarah about the report",
     "intent": "communication"
   },
   {
     "text": "send my landlord an email",
-    "intent": "communication"
-  },
-  {
-    "text": "send sarah an email",
-    "intent": "communication"
-  },
-  {
-    "text": "send my boss an email",
-    "intent": "communication"
-  },
-  {
-    "text": "send john an email",
-    "intent": "communication"
-  },
-  {
-    "text": "send mom an email",
     "intent": "communication"
   },
   {
@@ -1752,23 +1972,23 @@
     "intent": "communication"
   },
   {
+    "text": "send john an email",
+    "intent": "communication"
+  },
+  {
     "text": "send dad an email",
     "intent": "communication"
   },
   {
-    "text": "forward john's email",
+    "text": "send sarah an email",
     "intent": "communication"
   },
   {
-    "text": "reply to john's email",
+    "text": "send my boss an email",
     "intent": "communication"
   },
   {
-    "text": "forward my landlord's email",
-    "intent": "communication"
-  },
-  {
-    "text": "forward alex's email",
+    "text": "send mom an email",
     "intent": "communication"
   },
   {
@@ -1776,15 +1996,11 @@
     "intent": "communication"
   },
   {
+    "text": "forward alex's email",
+    "intent": "communication"
+  },
+  {
     "text": "reply to alex's email",
-    "intent": "communication"
-  },
-  {
-    "text": "reply to the team's email",
-    "intent": "communication"
-  },
-  {
-    "text": "forward sarah's email",
     "intent": "communication"
   },
   {
@@ -1792,11 +2008,19 @@
     "intent": "communication"
   },
   {
+    "text": "reply to mom's email",
+    "intent": "communication"
+  },
+  {
+    "text": "forward my landlord's email",
+    "intent": "communication"
+  },
+  {
     "text": "forward my boss's email",
     "intent": "communication"
   },
   {
-    "text": "reply to dad's email",
+    "text": "forward john's email",
     "intent": "communication"
   },
   {
@@ -1808,11 +2032,23 @@
     "intent": "communication"
   },
   {
-    "text": "reply to mom's email",
+    "text": "reply to the team's email",
+    "intent": "communication"
+  },
+  {
+    "text": "forward sarah's email",
     "intent": "communication"
   },
   {
     "text": "forward the team's email",
+    "intent": "communication"
+  },
+  {
+    "text": "reply to dad's email",
+    "intent": "communication"
+  },
+  {
+    "text": "reply to john's email",
     "intent": "communication"
   },
   {
@@ -1884,6 +2120,10 @@
     "intent": "timers_alarms"
   },
   {
+    "text": "set a timer for 5 minutes",
+    "intent": "timers_alarms"
+  },
+  {
     "text": "set a timer for 15 minutes",
     "intent": "timers_alarms"
   },
@@ -1892,15 +2132,7 @@
     "intent": "timers_alarms"
   },
   {
-    "text": "set a timer for 3 minutes",
-    "intent": "timers_alarms"
-  },
-  {
-    "text": "set a timer for 5 minutes",
-    "intent": "timers_alarms"
-  },
-  {
-    "text": "set a timer for 1 hour",
+    "text": "set a timer for 45 minutes",
     "intent": "timers_alarms"
   },
   {
@@ -1908,15 +2140,19 @@
     "intent": "timers_alarms"
   },
   {
+    "text": "set a timer for 3 minutes",
+    "intent": "timers_alarms"
+  },
+  {
     "text": "set a timer for 2 minutes",
     "intent": "timers_alarms"
   },
   {
-    "text": "set a timer for 45 minutes",
+    "text": "set a timer for 1 hour",
     "intent": "timers_alarms"
   },
   {
-    "text": "set a timer for the oven",
+    "text": "set a timer for the tea",
     "intent": "timers_alarms"
   },
   {
@@ -1924,7 +2160,7 @@
     "intent": "timers_alarms"
   },
   {
-    "text": "set a timer for the tea",
+    "text": "set a timer for the oven",
     "intent": "timers_alarms"
   },
   {
@@ -1936,27 +2172,7 @@
     "intent": "timers_alarms"
   },
   {
-    "text": "set an alarm for 10am",
-    "intent": "timers_alarms"
-  },
-  {
-    "text": "set an alarm for 5 o'clock",
-    "intent": "timers_alarms"
-  },
-  {
-    "text": "set an alarm for 4pm",
-    "intent": "timers_alarms"
-  },
-  {
-    "text": "set an alarm for 3pm",
-    "intent": "timers_alarms"
-  },
-  {
     "text": "set an alarm for 1pm",
-    "intent": "timers_alarms"
-  },
-  {
-    "text": "set an alarm for 2:30",
     "intent": "timers_alarms"
   },
   {
@@ -1964,11 +2180,23 @@
     "intent": "timers_alarms"
   },
   {
-    "text": "wake me up at 4pm",
+    "text": "set an alarm for 5 o'clock",
     "intent": "timers_alarms"
   },
   {
-    "text": "wake me up at noon",
+    "text": "set an alarm for 3pm",
+    "intent": "timers_alarms"
+  },
+  {
+    "text": "set an alarm for 2:30",
+    "intent": "timers_alarms"
+  },
+  {
+    "text": "set an alarm for 10am",
+    "intent": "timers_alarms"
+  },
+  {
+    "text": "set an alarm for 4pm",
     "intent": "timers_alarms"
   },
   {
@@ -1976,7 +2204,11 @@
     "intent": "timers_alarms"
   },
   {
-    "text": "wake me up at 9am",
+    "text": "wake me up at 10am",
+    "intent": "timers_alarms"
+  },
+  {
+    "text": "wake me up at 4pm",
     "intent": "timers_alarms"
   },
   {
@@ -1984,7 +2216,7 @@
     "intent": "timers_alarms"
   },
   {
-    "text": "wake me up at 2:30",
+    "text": "wake me up at noon",
     "intent": "timers_alarms"
   },
   {
@@ -1992,15 +2224,15 @@
     "intent": "timers_alarms"
   },
   {
-    "text": "wake me up at 10am",
+    "text": "wake me up at 9am",
+    "intent": "timers_alarms"
+  },
+  {
+    "text": "wake me up at 2:30",
     "intent": "timers_alarms"
   },
   {
     "text": "pause my timer",
-    "intent": "timers_alarms"
-  },
-  {
-    "text": "pause the alarm",
     "intent": "timers_alarms"
   },
   {
@@ -2012,7 +2244,7 @@
     "intent": "timers_alarms"
   },
   {
-    "text": "stop the timer",
+    "text": "pause the alarm",
     "intent": "timers_alarms"
   },
   {
@@ -2021,6 +2253,10 @@
   },
   {
     "text": "cancel the alarm",
+    "intent": "timers_alarms"
+  },
+  {
+    "text": "stop the timer",
     "intent": "timers_alarms"
   },
   {
@@ -2096,47 +2332,15 @@
     "intent": "weather"
   },
   {
-    "text": "what's the weather tomorrow",
-    "intent": "weather"
-  },
-  {
     "text": "what's the weather tonight",
     "intent": "weather"
   },
   {
-    "text": "is it going to snow today",
+    "text": "what's the weather tomorrow",
     "intent": "weather"
   },
   {
     "text": "is it going to be sunny tonight",
-    "intent": "weather"
-  },
-  {
-    "text": "is it going to be sunny today",
-    "intent": "weather"
-  },
-  {
-    "text": "is it going to be windy tomorrow",
-    "intent": "weather"
-  },
-  {
-    "text": "is it going to snow tonight",
-    "intent": "weather"
-  },
-  {
-    "text": "is it going to snow tomorrow",
-    "intent": "weather"
-  },
-  {
-    "text": "is it going to rain tonight",
-    "intent": "weather"
-  },
-  {
-    "text": "is it going to be windy today",
-    "intent": "weather"
-  },
-  {
-    "text": "is it going to rain today",
     "intent": "weather"
   },
   {
@@ -2148,11 +2352,51 @@
     "intent": "weather"
   },
   {
-    "text": "what's the temperature tomorrow",
+    "text": "is it going to rain tonight",
+    "intent": "weather"
+  },
+  {
+    "text": "is it going to rain today",
+    "intent": "weather"
+  },
+  {
+    "text": "is it going to be sunny today",
+    "intent": "weather"
+  },
+  {
+    "text": "is it going to snow tonight",
+    "intent": "weather"
+  },
+  {
+    "text": "is it going to snow today",
+    "intent": "weather"
+  },
+  {
+    "text": "is it going to be windy tomorrow",
+    "intent": "weather"
+  },
+  {
+    "text": "is it going to be windy today",
+    "intent": "weather"
+  },
+  {
+    "text": "is it going to snow tomorrow",
+    "intent": "weather"
+  },
+  {
+    "text": "what's the temperature this weekend",
     "intent": "weather"
   },
   {
     "text": "what's the forecast this weekend",
+    "intent": "weather"
+  },
+  {
+    "text": "what's the forecast today",
+    "intent": "weather"
+  },
+  {
+    "text": "what's the temperature tomorrow",
     "intent": "weather"
   },
   {
@@ -2164,27 +2408,7 @@
     "intent": "weather"
   },
   {
-    "text": "what's the temperature this weekend",
-    "intent": "weather"
-  },
-  {
-    "text": "what's the forecast today",
-    "intent": "weather"
-  },
-  {
-    "text": "do i need sunglasses today",
-    "intent": "weather"
-  },
-  {
     "text": "do i need sunglasses tomorrow",
-    "intent": "weather"
-  },
-  {
-    "text": "do i need a jacket tomorrow",
-    "intent": "weather"
-  },
-  {
-    "text": "do i need an umbrella tomorrow",
     "intent": "weather"
   },
   {
@@ -2192,7 +2416,15 @@
     "intent": "weather"
   },
   {
-    "text": "how cold is it going to be",
+    "text": "do i need a jacket tomorrow",
+    "intent": "weather"
+  },
+  {
+    "text": "do i need sunglasses today",
+    "intent": "weather"
+  },
+  {
+    "text": "do i need an umbrella tomorrow",
     "intent": "weather"
   },
   {
@@ -2200,7 +2432,11 @@
     "intent": "weather"
   },
   {
-    "text": "how hot is it going to be",
+    "text": "how hot is it right now",
+    "intent": "weather"
+  },
+  {
+    "text": "how windy is it right now",
     "intent": "weather"
   },
   {
@@ -2212,7 +2448,11 @@
     "intent": "weather"
   },
   {
-    "text": "how hot is it right now",
+    "text": "how cold is it going to be",
+    "intent": "weather"
+  },
+  {
+    "text": "how hot is it going to be",
     "intent": "weather"
   },
   {
@@ -2220,19 +2460,7 @@
     "intent": "weather"
   },
   {
-    "text": "how windy is it right now",
-    "intent": "weather"
-  },
-  {
-    "text": "what's the weather like in seattle",
-    "intent": "weather"
-  },
-  {
-    "text": "what's the weather like in new york",
-    "intent": "weather"
-  },
-  {
-    "text": "what's the weather like in chicago",
+    "text": "what's the weather like in tokyo",
     "intent": "weather"
   },
   {
@@ -2240,7 +2468,15 @@
     "intent": "weather"
   },
   {
-    "text": "what's the weather like in tokyo",
+    "text": "what's the weather like in seattle",
+    "intent": "weather"
+  },
+  {
+    "text": "what's the weather like in chicago",
+    "intent": "weather"
+  },
+  {
+    "text": "what's the weather like in new york",
     "intent": "weather"
   },
   {
@@ -2304,15 +2540,11 @@
     "intent": "navigation"
   },
   {
+    "text": "navigate to the grocery store",
+    "intent": "navigation"
+  },
+  {
     "text": "navigate to the nearest pharmacy",
-    "intent": "navigation"
-  },
-  {
-    "text": "navigate to the train station",
-    "intent": "navigation"
-  },
-  {
-    "text": "navigate to work",
     "intent": "navigation"
   },
   {
@@ -2320,7 +2552,11 @@
     "intent": "navigation"
   },
   {
-    "text": "navigate to the airport",
+    "text": "navigate to work",
+    "intent": "navigation"
+  },
+  {
+    "text": "navigate to the train station",
     "intent": "navigation"
   },
   {
@@ -2328,19 +2564,7 @@
     "intent": "navigation"
   },
   {
-    "text": "navigate to the grocery store",
-    "intent": "navigation"
-  },
-  {
-    "text": "directions to the mall",
-    "intent": "navigation"
-  },
-  {
-    "text": "directions to the grocery store",
-    "intent": "navigation"
-  },
-  {
-    "text": "directions to home",
+    "text": "navigate to the airport",
     "intent": "navigation"
   },
   {
@@ -2352,7 +2576,15 @@
     "intent": "navigation"
   },
   {
+    "text": "directions to home",
+    "intent": "navigation"
+  },
+  {
     "text": "directions to work",
+    "intent": "navigation"
+  },
+  {
+    "text": "directions to the grocery store",
     "intent": "navigation"
   },
   {
@@ -2360,23 +2592,7 @@
     "intent": "navigation"
   },
   {
-    "text": "how long to work",
-    "intent": "navigation"
-  },
-  {
-    "text": "how long to downtown",
-    "intent": "navigation"
-  },
-  {
-    "text": "how long to get to the grocery store",
-    "intent": "navigation"
-  },
-  {
-    "text": "how long to get to the nearest pharmacy",
-    "intent": "navigation"
-  },
-  {
-    "text": "how long to get to the mall",
+    "text": "directions to the mall",
     "intent": "navigation"
   },
   {
@@ -2384,19 +2600,15 @@
     "intent": "navigation"
   },
   {
-    "text": "how long to get to work",
+    "text": "how long to get to the train station",
     "intent": "navigation"
   },
   {
-    "text": "how long to the nearest pharmacy",
+    "text": "how long to get to the mall",
     "intent": "navigation"
   },
   {
-    "text": "how long to the airport",
-    "intent": "navigation"
-  },
-  {
-    "text": "how long to get to downtown",
+    "text": "how long to get to the grocery store",
     "intent": "navigation"
   },
   {
@@ -2404,7 +2616,27 @@
     "intent": "navigation"
   },
   {
+    "text": "how long to get to work",
+    "intent": "navigation"
+  },
+  {
     "text": "how long to get to the airport",
+    "intent": "navigation"
+  },
+  {
+    "text": "how long to the nearest pharmacy",
+    "intent": "navigation"
+  },
+  {
+    "text": "how long to get to downtown",
+    "intent": "navigation"
+  },
+  {
+    "text": "how long to work",
+    "intent": "navigation"
+  },
+  {
+    "text": "how long to get to the nearest pharmacy",
     "intent": "navigation"
   },
   {
@@ -2412,27 +2644,31 @@
     "intent": "navigation"
   },
   {
-    "text": "how long to the grocery store",
-    "intent": "navigation"
-  },
-  {
-    "text": "how long to get to the train station",
-    "intent": "navigation"
-  },
-  {
     "text": "how long to the train station",
     "intent": "navigation"
   },
   {
-    "text": "what's the fastest route to home",
+    "text": "how long to the airport",
     "intent": "navigation"
   },
   {
-    "text": "what's the best route to home",
+    "text": "how long to downtown",
     "intent": "navigation"
   },
   {
-    "text": "what's the fastest route to the airport",
+    "text": "how long to the grocery store",
+    "intent": "navigation"
+  },
+  {
+    "text": "what's the fastest route to the nearest pharmacy",
+    "intent": "navigation"
+  },
+  {
+    "text": "what's the fastest route to the grocery store",
+    "intent": "navigation"
+  },
+  {
+    "text": "what's the best route to downtown",
     "intent": "navigation"
   },
   {
@@ -2440,7 +2676,35 @@
     "intent": "navigation"
   },
   {
-    "text": "what's the fastest route to the grocery store",
+    "text": "what's the best route to the grocery store",
+    "intent": "navigation"
+  },
+  {
+    "text": "what's the fastest route to downtown",
+    "intent": "navigation"
+  },
+  {
+    "text": "what's the best route to the nearest pharmacy",
+    "intent": "navigation"
+  },
+  {
+    "text": "what's the best route to home",
+    "intent": "navigation"
+  },
+  {
+    "text": "what's the best route to the train station",
+    "intent": "navigation"
+  },
+  {
+    "text": "what's the fastest route to the airport",
+    "intent": "navigation"
+  },
+  {
+    "text": "what's the best route to the mall",
+    "intent": "navigation"
+  },
+  {
+    "text": "what's the fastest route to home",
     "intent": "navigation"
   },
   {
@@ -2452,55 +2716,7 @@
     "intent": "navigation"
   },
   {
-    "text": "what's the best route to downtown",
-    "intent": "navigation"
-  },
-  {
-    "text": "what's the best route to the mall",
-    "intent": "navigation"
-  },
-  {
-    "text": "what's the best route to the grocery store",
-    "intent": "navigation"
-  },
-  {
-    "text": "what's the best route to the nearest pharmacy",
-    "intent": "navigation"
-  },
-  {
     "text": "what's the best route to the airport",
-    "intent": "navigation"
-  },
-  {
-    "text": "what's the fastest route to downtown",
-    "intent": "navigation"
-  },
-  {
-    "text": "what's the best route to the train station",
-    "intent": "navigation"
-  },
-  {
-    "text": "what's the fastest route to the nearest pharmacy",
-    "intent": "navigation"
-  },
-  {
-    "text": "is there traffic on the way to work",
-    "intent": "navigation"
-  },
-  {
-    "text": "is there traffic to the airport",
-    "intent": "navigation"
-  },
-  {
-    "text": "is there traffic to work",
-    "intent": "navigation"
-  },
-  {
-    "text": "is there traffic on the way to the airport",
-    "intent": "navigation"
-  },
-  {
-    "text": "is there traffic to the grocery store",
     "intent": "navigation"
   },
   {
@@ -2508,39 +2724,7 @@
     "intent": "navigation"
   },
   {
-    "text": "is there traffic on the way to the nearest pharmacy",
-    "intent": "navigation"
-  },
-  {
-    "text": "is there traffic to the mall",
-    "intent": "navigation"
-  },
-  {
-    "text": "is there traffic on the way to the grocery store",
-    "intent": "navigation"
-  },
-  {
-    "text": "is there traffic on the way to home",
-    "intent": "navigation"
-  },
-  {
-    "text": "is there traffic on the way to downtown",
-    "intent": "navigation"
-  },
-  {
-    "text": "is there traffic to home",
-    "intent": "navigation"
-  },
-  {
     "text": "is there traffic to downtown",
-    "intent": "navigation"
-  },
-  {
-    "text": "is there traffic on the way to the train station",
-    "intent": "navigation"
-  },
-  {
-    "text": "is there traffic on the way to the mall",
     "intent": "navigation"
   },
   {
@@ -2548,19 +2732,55 @@
     "intent": "navigation"
   },
   {
-    "text": "find parking near me",
+    "text": "is there traffic to home",
     "intent": "navigation"
   },
   {
-    "text": "find parking near here",
+    "text": "is there traffic on the way to the mall",
     "intent": "navigation"
   },
   {
-    "text": "find a coffee shop near me",
+    "text": "is there traffic to work",
     "intent": "navigation"
   },
   {
-    "text": "find a coffee shop near here",
+    "text": "is there traffic on the way to home",
+    "intent": "navigation"
+  },
+  {
+    "text": "is there traffic on the way to the grocery store",
+    "intent": "navigation"
+  },
+  {
+    "text": "is there traffic on the way to the airport",
+    "intent": "navigation"
+  },
+  {
+    "text": "is there traffic to the mall",
+    "intent": "navigation"
+  },
+  {
+    "text": "is there traffic on the way to downtown",
+    "intent": "navigation"
+  },
+  {
+    "text": "is there traffic to the grocery store",
+    "intent": "navigation"
+  },
+  {
+    "text": "is there traffic on the way to work",
+    "intent": "navigation"
+  },
+  {
+    "text": "is there traffic on the way to the train station",
+    "intent": "navigation"
+  },
+  {
+    "text": "is there traffic to the airport",
+    "intent": "navigation"
+  },
+  {
+    "text": "is there traffic on the way to the nearest pharmacy",
     "intent": "navigation"
   },
   {
@@ -2568,11 +2788,27 @@
     "intent": "navigation"
   },
   {
+    "text": "find parking near here",
+    "intent": "navigation"
+  },
+  {
+    "text": "find a coffee shop near here",
+    "intent": "navigation"
+  },
+  {
+    "text": "find parking near me",
+    "intent": "navigation"
+  },
+  {
+    "text": "find a coffee shop near me",
+    "intent": "navigation"
+  },
+  {
     "text": "take me to the airport",
     "intent": "navigation"
   },
   {
-    "text": "take me to the train station",
+    "text": "take me to the grocery store",
     "intent": "navigation"
   },
   {
@@ -2580,19 +2816,19 @@
     "intent": "navigation"
   },
   {
-    "text": "take me to downtown",
-    "intent": "navigation"
-  },
-  {
     "text": "take me to work",
     "intent": "navigation"
   },
   {
-    "text": "take me to the mall",
+    "text": "take me to downtown",
     "intent": "navigation"
   },
   {
-    "text": "take me to the grocery store",
+    "text": "take me to the train station",
+    "intent": "navigation"
+  },
+  {
+    "text": "take me to the mall",
     "intent": "navigation"
   },
   {
@@ -2652,11 +2888,11 @@
     "intent": "none"
   },
   {
-    "text": "order me coffee",
+    "text": "order me pizza",
     "intent": "none"
   },
   {
-    "text": "order me tacos",
+    "text": "order me coffee",
     "intent": "none"
   },
   {
@@ -2664,19 +2900,19 @@
     "intent": "none"
   },
   {
-    "text": "order me sushi",
-    "intent": "none"
-  },
-  {
-    "text": "order me pizza",
-    "intent": "none"
-  },
-  {
     "text": "order me a burger",
     "intent": "none"
   },
   {
-    "text": "book me a train ticket",
+    "text": "order me sushi",
+    "intent": "none"
+  },
+  {
+    "text": "order me tacos",
+    "intent": "none"
+  },
+  {
+    "text": "book me a uber",
     "intent": "none"
   },
   {
@@ -2688,7 +2924,7 @@
     "intent": "none"
   },
   {
-    "text": "book me a uber",
+    "text": "book me a train ticket",
     "intent": "none"
   },
   {
@@ -2700,7 +2936,7 @@
     "intent": "none"
   },
   {
-    "text": "add pizza to my shopping list",
+    "text": "add thai food to my shopping list",
     "intent": "none"
   },
   {
@@ -2708,15 +2944,15 @@
     "intent": "none"
   },
   {
+    "text": "add a burger to my shopping list",
+    "intent": "none"
+  },
+  {
     "text": "add coffee to my shopping list",
     "intent": "none"
   },
   {
-    "text": "add thai food to my shopping list",
-    "intent": "none"
-  },
-  {
-    "text": "add a burger to my shopping list",
+    "text": "add pizza to my shopping list",
     "intent": "none"
   },
   {
@@ -2724,27 +2960,7 @@
     "intent": "none"
   },
   {
-    "text": "meh whatever",
-    "intent": "none"
-  },
-  {
-    "text": "ugh never mind",
-    "intent": "none"
-  },
-  {
-    "text": "hmm never mind",
-    "intent": "none"
-  },
-  {
-    "text": "ugh whatever",
-    "intent": "none"
-  },
-  {
-    "text": "meh never mind",
-    "intent": "none"
-  },
-  {
-    "text": "meh what a day",
+    "text": "hmm what a day",
     "intent": "none"
   },
   {
@@ -2752,7 +2968,27 @@
     "intent": "none"
   },
   {
-    "text": "hmm what a day",
+    "text": "meh what a day",
+    "intent": "none"
+  },
+  {
+    "text": "ugh whatever",
+    "intent": "none"
+  },
+  {
+    "text": "meh whatever",
+    "intent": "none"
+  },
+  {
+    "text": "hmm never mind",
+    "intent": "none"
+  },
+  {
+    "text": "meh never mind",
+    "intent": "none"
+  },
+  {
+    "text": "ugh never mind",
     "intent": "none"
   },
   {
@@ -2760,7 +2996,7 @@
     "intent": "none"
   },
   {
-    "text": "uhh what",
+    "text": "qwerty asdf",
     "intent": "none"
   },
   {
@@ -2772,7 +3008,7 @@
     "intent": "none"
   },
   {
-    "text": "qwerty asdf",
+    "text": "uhh what",
     "intent": "none"
   }
 ]

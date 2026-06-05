@@ -84,15 +84,11 @@
     "intent": "answers"
   },
   {
-    "text": "i want to listen to reggae",
-    "intent": "media"
-  },
-  {
-    "text": "i want to listen to blues",
-    "intent": "media"
-  },
-  {
     "text": "i want to listen to k-pop",
+    "intent": "media"
+  },
+  {
+    "text": "i want to listen to reggae",
     "intent": "media"
   },
   {
@@ -100,11 +96,7 @@
     "intent": "media"
   },
   {
-    "text": "can you play ed sheeran on apple music",
-    "intent": "media"
-  },
-  {
-    "text": "can you play the weeknd on apple music",
+    "text": "i want to listen to blues",
     "intent": "media"
   },
   {
@@ -112,7 +104,7 @@
     "intent": "media"
   },
   {
-    "text": "can you play sza on apple music",
+    "text": "can you play ed sheeran on youtube music",
     "intent": "media"
   },
   {
@@ -120,19 +112,23 @@
     "intent": "media"
   },
   {
-    "text": "can you play ed sheeran",
+    "text": "can you play bad bunny",
     "intent": "media"
   },
   {
-    "text": "can you play the weeknd on spotify",
+    "text": "can you play sza",
     "intent": "media"
   },
   {
-    "text": "can you play ed sheeran on spotify",
+    "text": "can you play bad bunny on spotify",
     "intent": "media"
   },
   {
-    "text": "can you play sza on spotify",
+    "text": "can you play the weeknd on soundcloud",
+    "intent": "media"
+  },
+  {
+    "text": "can you play ed sheeran on apple music",
     "intent": "media"
   },
   {
@@ -140,15 +136,7 @@
     "intent": "media"
   },
   {
-    "text": "go to the next track",
-    "intent": "media"
-  },
-  {
-    "text": "go to the previous song",
-    "intent": "media"
-  },
-  {
-    "text": "go to the previous track",
+    "text": "can you play bad bunny on apple music",
     "intent": "media"
   },
   {
@@ -156,19 +144,35 @@
     "intent": "media"
   },
   {
+    "text": "go to the next track",
+    "intent": "media"
+  },
+  {
+    "text": "go to the previous track",
+    "intent": "media"
+  },
+  {
+    "text": "go to the previous song",
+    "intent": "media"
+  },
+  {
     "text": "turn it down",
     "intent": "media"
   },
   {
-    "text": "can you turn off the porch lights",
+    "text": "can you turn on the study ceiling light",
     "intent": "smart_home"
   },
   {
-    "text": "can you turn off the basement lights",
+    "text": "can you turn off the nursery lights",
     "intent": "smart_home"
   },
   {
-    "text": "can you turn on the nursery light",
+    "text": "can you turn on the basement ceiling light",
+    "intent": "smart_home"
+  },
+  {
+    "text": "can you turn on the porch lamp",
     "intent": "smart_home"
   },
   {
@@ -176,55 +180,27 @@
     "intent": "smart_home"
   },
   {
-    "text": "can you turn off the nursery lamp",
-    "intent": "smart_home"
-  },
-  {
-    "text": "can you turn off the study light",
-    "intent": "smart_home"
-  },
-  {
-    "text": "can you turn on the porch lights",
-    "intent": "smart_home"
-  },
-  {
-    "text": "can you turn on the basement lights",
-    "intent": "smart_home"
-  },
-  {
     "text": "can you turn on the basement light",
     "intent": "smart_home"
   },
   {
-    "text": "dim the ceiling light in the study",
+    "text": "can you turn off the basement lights",
     "intent": "smart_home"
   },
   {
-    "text": "dim the light in the nursery",
+    "text": "can you turn off the nursery light",
     "intent": "smart_home"
   },
   {
-    "text": "brighten the lights in the nursery",
+    "text": "can you turn on the nursery ceiling light",
     "intent": "smart_home"
   },
   {
-    "text": "dim the ceiling light in the basement",
+    "text": "can you turn off the basement lamp",
     "intent": "smart_home"
   },
   {
-    "text": "dim the lights in the study",
-    "intent": "smart_home"
-  },
-  {
-    "text": "dim the lamp in the basement",
-    "intent": "smart_home"
-  },
-  {
-    "text": "dim the lamp in the nursery",
-    "intent": "smart_home"
-  },
-  {
-    "text": "brighten the lamp in the basement",
+    "text": "brighten the ceiling light in the nursery",
     "intent": "smart_home"
   },
   {
@@ -232,11 +208,43 @@
     "intent": "smart_home"
   },
   {
-    "text": "brighten the lamp in the study",
+    "text": "dim the ceiling light in the porch",
     "intent": "smart_home"
   },
   {
-    "text": "i want the basement light off",
+    "text": "dim the lamp in the basement",
+    "intent": "smart_home"
+  },
+  {
+    "text": "brighten the light in the study",
+    "intent": "smart_home"
+  },
+  {
+    "text": "brighten the ceiling light in the porch",
+    "intent": "smart_home"
+  },
+  {
+    "text": "dim the ceiling light in the study",
+    "intent": "smart_home"
+  },
+  {
+    "text": "brighten the lights in the basement",
+    "intent": "smart_home"
+  },
+  {
+    "text": "dim the light in the study",
+    "intent": "smart_home"
+  },
+  {
+    "text": "dim the lights in the basement",
+    "intent": "smart_home"
+  },
+  {
+    "text": "i want the nursery ceiling light on",
+    "intent": "smart_home"
+  },
+  {
+    "text": "i want the study ceiling light on",
     "intent": "smart_home"
   },
   {
@@ -244,19 +252,11 @@
     "intent": "smart_home"
   },
   {
-    "text": "i want the nursery lights off",
+    "text": "i want the study light off",
     "intent": "smart_home"
   },
   {
-    "text": "i want the study ceiling light off",
-    "intent": "smart_home"
-  },
-  {
-    "text": "i want the nursery light off",
-    "intent": "smart_home"
-  },
-  {
-    "text": "i want the basement lamp on",
+    "text": "i want the nursery ceiling light off",
     "intent": "smart_home"
   },
   {
@@ -264,35 +264,43 @@
     "intent": "smart_home"
   },
   {
-    "text": "i want the nursery lamp off",
+    "text": "i want the study lamp on",
     "intent": "smart_home"
   },
   {
-    "text": "i want the porch lights off",
+    "text": "i want the nursery lights on",
     "intent": "smart_home"
   },
   {
-    "text": "i want the study lamp off",
+    "text": "i want the nursery light on",
     "intent": "smart_home"
   },
   {
-    "text": "set up a call with priya at 4pm",
+    "text": "i want the basement ceiling light off",
+    "intent": "smart_home"
+  },
+  {
+    "text": "set up a meeting with dr patel at 3",
     "intent": "productivity"
   },
   {
-    "text": "set up a meeting with dr patel next week",
+    "text": "set up a meeting with priya at 4pm",
     "intent": "productivity"
   },
   {
-    "text": "set up a call with dr patel on friday",
+    "text": "set up a meeting with priya on saturday",
     "intent": "productivity"
   },
   {
-    "text": "set up a call with priya on saturday",
+    "text": "set up a meeting with priya on monday",
     "intent": "productivity"
   },
   {
-    "text": "set up a call with dr patel on saturday",
+    "text": "set up a meeting with priya this afternoon",
+    "intent": "productivity"
+  },
+  {
+    "text": "set up a call with dr patel tomorrow",
     "intent": "productivity"
   },
   {
@@ -300,19 +308,15 @@
     "intent": "productivity"
   },
   {
-    "text": "set up a call with priya tomorrow",
+    "text": "set up a call with dr patel on friday",
     "intent": "productivity"
   },
   {
-    "text": "set up a call with priya next week",
+    "text": "set up a meeting with dr patel on monday",
     "intent": "productivity"
   },
   {
-    "text": "set up a meeting with mike on saturday",
-    "intent": "productivity"
-  },
-  {
-    "text": "set up a call with priya on monday",
+    "text": "set up a meeting with grandma at 3",
     "intent": "productivity"
   },
   {
@@ -324,7 +328,7 @@
     "intent": "productivity"
   },
   {
-    "text": "set a reminder to book the venue",
+    "text": "set a reminder to pick up groceries",
     "intent": "productivity"
   },
   {
@@ -332,15 +336,11 @@
     "intent": "productivity"
   },
   {
-    "text": "set a reminder to feed the cat",
-    "intent": "productivity"
-  },
-  {
     "text": "set a reminder to call the bank",
     "intent": "productivity"
   },
   {
-    "text": "set a reminder to pick up groceries",
+    "text": "set a reminder to feed the cat",
     "intent": "productivity"
   },
   {
@@ -352,19 +352,15 @@
     "intent": "productivity"
   },
   {
+    "text": "set a reminder to book the venue",
+    "intent": "productivity"
+  },
+  {
     "text": "when is my next meeting",
     "intent": "productivity"
   },
   {
-    "text": "write an email to priya",
-    "intent": "communication"
-  },
-  {
     "text": "write an email to mike",
-    "intent": "communication"
-  },
-  {
-    "text": "write an email to dr patel",
     "intent": "communication"
   },
   {
@@ -372,23 +368,11 @@
     "intent": "communication"
   },
   {
-    "text": "any new messages from dr patel",
+    "text": "write an email to dr patel",
     "intent": "communication"
   },
   {
-    "text": "any new emails from mike",
-    "intent": "communication"
-  },
-  {
-    "text": "any new emails from dr patel",
-    "intent": "communication"
-  },
-  {
-    "text": "any new messages from grandma",
-    "intent": "communication"
-  },
-  {
-    "text": "any new messages from mike",
+    "text": "write an email to priya",
     "intent": "communication"
   },
   {
@@ -396,7 +380,23 @@
     "intent": "communication"
   },
   {
-    "text": "any new messages from priya",
+    "text": "any new messages from dr patel",
+    "intent": "communication"
+  },
+  {
+    "text": "any new emails from dr patel",
+    "intent": "communication"
+  },
+  {
+    "text": "any new emails from mike",
+    "intent": "communication"
+  },
+  {
+    "text": "any new messages from mike",
+    "intent": "communication"
+  },
+  {
+    "text": "any new messages from grandma",
     "intent": "communication"
   },
   {
@@ -404,15 +404,11 @@
     "intent": "communication"
   },
   {
+    "text": "any new messages from priya",
+    "intent": "communication"
+  },
+  {
     "text": "call mike for me",
-    "intent": "communication"
-  },
-  {
-    "text": "call priya for me",
-    "intent": "communication"
-  },
-  {
-    "text": "call dr patel for me",
     "intent": "communication"
   },
   {
@@ -420,7 +416,15 @@
     "intent": "communication"
   },
   {
-    "text": "send a text to priya",
+    "text": "call dr patel for me",
+    "intent": "communication"
+  },
+  {
+    "text": "call priya for me",
+    "intent": "communication"
+  },
+  {
+    "text": "send a text to grandma",
     "intent": "communication"
   },
   {
@@ -432,7 +436,7 @@
     "intent": "communication"
   },
   {
-    "text": "send a text to grandma",
+    "text": "send a text to priya",
     "intent": "communication"
   },
   {
@@ -440,7 +444,19 @@
     "intent": "timers_alarms"
   },
   {
+    "text": "start a timer for 20 minutes",
+    "intent": "timers_alarms"
+  },
+  {
     "text": "start a timer for 45 minutes",
+    "intent": "timers_alarms"
+  },
+  {
+    "text": "start a timer for 10 minutes",
+    "intent": "timers_alarms"
+  },
+  {
+    "text": "start a timer for 90 seconds",
     "intent": "timers_alarms"
   },
   {
@@ -452,7 +468,7 @@
     "intent": "timers_alarms"
   },
   {
-    "text": "start a timer for 10 minutes",
+    "text": "start a timer for 3 minutes",
     "intent": "timers_alarms"
   },
   {
@@ -464,31 +480,7 @@
     "intent": "timers_alarms"
   },
   {
-    "text": "start a timer for 20 minutes",
-    "intent": "timers_alarms"
-  },
-  {
-    "text": "start a timer for 3 minutes",
-    "intent": "timers_alarms"
-  },
-  {
-    "text": "start a timer for 90 seconds",
-    "intent": "timers_alarms"
-  },
-  {
-    "text": "set the alarm for 4pm",
-    "intent": "timers_alarms"
-  },
-  {
-    "text": "set the alarm for noon",
-    "intent": "timers_alarms"
-  },
-  {
     "text": "set the alarm for 5 o'clock",
-    "intent": "timers_alarms"
-  },
-  {
-    "text": "set the alarm for 3pm",
     "intent": "timers_alarms"
   },
   {
@@ -496,7 +488,23 @@
     "intent": "timers_alarms"
   },
   {
+    "text": "set the alarm for noon",
+    "intent": "timers_alarms"
+  },
+  {
     "text": "set the alarm for 2:30",
+    "intent": "timers_alarms"
+  },
+  {
+    "text": "set the alarm for 9am",
+    "intent": "timers_alarms"
+  },
+  {
+    "text": "set the alarm for 4pm",
+    "intent": "timers_alarms"
+  },
+  {
+    "text": "set the alarm for 3pm",
     "intent": "timers_alarms"
   },
   {
@@ -504,7 +512,7 @@
     "intent": "timers_alarms"
   },
   {
-    "text": "set the alarm for 9am",
+    "text": "wake me at 2:30",
     "intent": "timers_alarms"
   },
   {
@@ -516,18 +524,6 @@
     "intent": "timers_alarms"
   },
   {
-    "text": "wake me at 5 o'clock",
-    "intent": "timers_alarms"
-  },
-  {
-    "text": "wake me at 1pm",
-    "intent": "timers_alarms"
-  },
-  {
-    "text": "wake me at 2:30",
-    "intent": "timers_alarms"
-  },
-  {
     "text": "wake me at 3pm",
     "intent": "timers_alarms"
   },
@@ -536,7 +532,15 @@
     "intent": "timers_alarms"
   },
   {
+    "text": "wake me at 1pm",
+    "intent": "timers_alarms"
+  },
+  {
     "text": "wake me at 10am",
+    "intent": "timers_alarms"
+  },
+  {
+    "text": "wake me at 5 o'clock",
     "intent": "timers_alarms"
   },
   {
@@ -548,15 +552,15 @@
     "intent": "timers_alarms"
   },
   {
-    "text": "will it snow this weekend",
-    "intent": "weather"
-  },
-  {
-    "text": "will it rain tomorrow",
+    "text": "will it snow tomorrow",
     "intent": "weather"
   },
   {
     "text": "will it snow today",
+    "intent": "weather"
+  },
+  {
+    "text": "will it rain tomorrow",
     "intent": "weather"
   },
   {
@@ -568,15 +572,11 @@
     "intent": "weather"
   },
   {
-    "text": "will it snow tomorrow",
+    "text": "will it snow this weekend",
     "intent": "weather"
   },
   {
-    "text": "is it sunny outside",
-    "intent": "weather"
-  },
-  {
-    "text": "is it hot right now",
+    "text": "is it hot outside",
     "intent": "weather"
   },
   {
@@ -584,7 +584,11 @@
     "intent": "weather"
   },
   {
-    "text": "is it hot outside",
+    "text": "is it hot right now",
+    "intent": "weather"
+  },
+  {
+    "text": "is it sunny outside",
     "intent": "weather"
   },
   {
@@ -596,11 +600,11 @@
     "intent": "weather"
   },
   {
-    "text": "should i bring a coat tomorrow",
+    "text": "should i bring an umbrella today",
     "intent": "weather"
   },
   {
-    "text": "should i bring a coat today",
+    "text": "should i bring a coat tomorrow",
     "intent": "weather"
   },
   {
@@ -608,11 +612,11 @@
     "intent": "weather"
   },
   {
-    "text": "should i bring an umbrella today",
+    "text": "should i bring a coat today",
     "intent": "weather"
   },
   {
-    "text": "how do i get to the beach",
+    "text": "how do i get to the nearest gas station",
     "intent": "navigation"
   },
   {
@@ -620,7 +624,7 @@
     "intent": "navigation"
   },
   {
-    "text": "how do i get to the nearest gas station",
+    "text": "how do i get to the beach",
     "intent": "navigation"
   },
   {
@@ -628,27 +632,7 @@
     "intent": "navigation"
   },
   {
-    "text": "what's traffic like near the nearest gas station",
-    "intent": "navigation"
-  },
-  {
-    "text": "what's traffic like to the stadium",
-    "intent": "navigation"
-  },
-  {
     "text": "what's traffic like near the stadium",
-    "intent": "navigation"
-  },
-  {
-    "text": "what's traffic like near the hospital",
-    "intent": "navigation"
-  },
-  {
-    "text": "what's traffic like to the beach",
-    "intent": "navigation"
-  },
-  {
-    "text": "what's traffic like to the hospital",
     "intent": "navigation"
   },
   {
@@ -656,11 +640,27 @@
     "intent": "navigation"
   },
   {
+    "text": "what's traffic like near the hospital",
+    "intent": "navigation"
+  },
+  {
+    "text": "what's traffic like to the hospital",
+    "intent": "navigation"
+  },
+  {
     "text": "what's traffic like to the nearest gas station",
     "intent": "navigation"
   },
   {
-    "text": "find the nearest gas station",
+    "text": "what's traffic like to the stadium",
+    "intent": "navigation"
+  },
+  {
+    "text": "what's traffic like near the nearest gas station",
+    "intent": "navigation"
+  },
+  {
+    "text": "what's traffic like to the beach",
     "intent": "navigation"
   },
   {
@@ -672,6 +672,10 @@
     "intent": "navigation"
   },
   {
+    "text": "find the nearest gas station",
+    "intent": "navigation"
+  },
+  {
     "text": "route me to the hospital",
     "intent": "navigation"
   },
@@ -680,23 +684,19 @@
     "intent": "navigation"
   },
   {
-    "text": "route me to the beach",
-    "intent": "navigation"
-  },
-  {
     "text": "route me to the nearest gas station",
     "intent": "navigation"
   },
   {
-    "text": "i need a rideshare to the airport",
-    "intent": "none"
+    "text": "route me to the beach",
+    "intent": "navigation"
   },
   {
     "text": "i need a cab to the airport",
     "intent": "none"
   },
   {
-    "text": "order ramen for delivery",
+    "text": "i need a rideshare to the airport",
     "intent": "none"
   },
   {
@@ -704,15 +704,7 @@
     "intent": "none"
   },
   {
-    "text": "translate this page into japanese",
-    "intent": "none"
-  },
-  {
-    "text": "translate this document into hindi",
-    "intent": "none"
-  },
-  {
-    "text": "translate this document into japanese",
+    "text": "order ramen for delivery",
     "intent": "none"
   },
   {
@@ -720,7 +712,31 @@
     "intent": "none"
   },
   {
-    "text": "translate this page into hindi",
+    "text": "translate this page into mandarin",
+    "intent": "none"
+  },
+  {
+    "text": "translate this document into japanese",
+    "intent": "none"
+  },
+  {
+    "text": "translate this page into italian",
+    "intent": "none"
+  },
+  {
+    "text": "translate this document into french",
+    "intent": "none"
+  },
+  {
+    "text": "translate this page into french",
+    "intent": "none"
+  },
+  {
+    "text": "translate this document into italian",
+    "intent": "none"
+  },
+  {
+    "text": "translate this document into mandarin",
     "intent": "none"
   },
   {
@@ -729,18 +745,6 @@
   },
   {
     "text": "translate this document into spanish",
-    "intent": "none"
-  },
-  {
-    "text": "translate this page into french",
-    "intent": "none"
-  },
-  {
-    "text": "translate this page into spanish",
-    "intent": "none"
-  },
-  {
-    "text": "translate this document into mandarin",
     "intent": "none"
   }
 ]

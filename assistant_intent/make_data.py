@@ -134,6 +134,14 @@ TEMPLATES = {
             "skip {to the next track|this song|ahead}",
             "turn the volume {up|down}",
             "play {playlist} {service_phrase}",
+            # desire/request phrasings (so "i want to listen to X" generalizes —
+            # different surface forms than the held-out test template)
+            "i'd like to hear some {genre}",
+            "i'm in the mood for some {genre}",
+            "can you put on some {genre} {service_phrase}",
+            "let's hear some {genre}",
+            "throw on {playlist}",
+            "queue up {artist} {service_phrase}",
         ],
         "test": [
             "i want to listen to {genre}",

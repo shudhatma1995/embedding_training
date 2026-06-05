@@ -61,6 +61,8 @@ SEEDS = {
         "stop the music",
         "play lofi beats on spotify",
         "turn on some music",                       # collision: "turn on" + music -> media
+        "i feel like listening to some jazz",       # desire form (helps "i want to listen to ...")
+        "i'd like to hear the beatles",
     ],
     "smart_home": [
         "turn on the living room lights",
