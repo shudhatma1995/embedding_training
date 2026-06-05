@@ -19,7 +19,7 @@ The contrastive idea (Multiple-Negatives-Ranking / InfoNCE)
 Why `none` is NOT trained here
   `none` is "everything else" (gibberish, statements, out-of-scope). It is not a
   tight semantic cluster, so pairing none-with-none as positives would teach
-  nonsense. Per intents.py we train the 4 REAL intents as prototypes and decide
+  nonsense. Per intents.py we train the REAL intents as prototypes and decide
   `none` with a similarity THRESHOLD at evaluation time (Stage 5).
 
 Why batch size == number of intents
@@ -33,7 +33,6 @@ Why batch size == number of intents
 Run:  python train.py            (writes models/finetuned/{model.pt,tokenizer.json,config.json})
 """
 import os
-import sys
 import time
 import random
 import argparse
@@ -41,23 +40,17 @@ import argparse
 import torch
 import torch.nn.functional as F
 
-# Reuse the embedder + tokenizer from customer_intent_search WITHOUT editing them.
-# Both modules depend only on torch (no sentence_transformers / sklearn / matplotlib),
-# so they import cleanly in this minimal venv.
-_CIS = os.path.join(os.path.dirname(__file__), "..", "customer_intent_search")
-sys.path.insert(0, _CIS)
-from tokenizer import SimpleTokenizer   # noqa: E402
-from model import build_model           # noqa: E402
-
-# Side code (I/O + batch shaping) lives in data.py; the classifier kernel in shared.py.
-from data import load_by_intent, intents_in_file, make_pairs, iter_batches, save_artifacts  # noqa: E402
-from shared import proto_recall1, make_encoder   # noqa: E402
+# Embedder + tokenizer come from customer_intent_search (reused untouched) via cis.py.
+from cis import SimpleTokenizer, build_model
+# Side code (I/O + batch shaping) in data.py; classifier kernel in shared.py.
+from data import (load_by_intent, intents_in_file, make_pairs, iter_batches,
+                  save_artifacts, DATA_DIR)
+from shared import proto_recall1, make_encoder
 # Intent taxonomy is owned by intents.py (single source of truth); `none` is excluded
 # from the trainable set by construction.
-from intents import REAL_INTENTS, NONE_ID   # noqa: E402
+from intents import REAL_INTENTS, NONE_ID
 
 HERE = os.path.dirname(__file__)
-DATA_DIR = os.path.join(HERE, "data")
 
 
 def resolve_train_intents(requested, data_path):

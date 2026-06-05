@@ -33,6 +33,9 @@ import importlib.util
 import numpy as np
 import torch
 
+from data import load_eval_data       # standard (train, test, none) loader
+from intents import REAL_INTENTS      # taxonomy source of truth
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -152,17 +155,13 @@ def main():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     scratch = os.path.join(HERE, "models", "_ablation_tmp")
 
-    data = (
-        ev.load_by_intent(os.path.join(ev.DATA_DIR, "train.json"), ev.REAL_INTENTS),
-        ev.load_by_intent(os.path.join(ev.DATA_DIR, "test.json"), ev.REAL_INTENTS),
-        ev.load_by_intent(os.path.join(ev.DATA_DIR, "test.json"), [ev.NONE_ID])[ev.NONE_ID],
-    )
+    eval_data = load_eval_data(REAL_INTENTS)   # (train_groups, test_groups, none_texts)
 
     print("=" * 78)
     print(f"MULTI-SEED ABLATION  (seeds={args.seeds}, {len(args.seeds)} runs per config)")
     print("=" * 78)
 
-    results = run_grid(args.seeds, device, data, scratch)
+    results = run_grid(args.seeds, device, eval_data, scratch)
     shutil.rmtree(scratch, ignore_errors=True)
     print_table(results, len(args.seeds))
     print_verdicts(results)

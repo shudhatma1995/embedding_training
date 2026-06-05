@@ -8,7 +8,7 @@ cross-intent label conflicts, and drop any test string that leaked into train.
 import random
 from collections import defaultdict
 
-from .slots import slots_for
+from .slots import slots_for, BASE_SLOTS
 from .templates import TEMPLATES
 from .engine import expand, validate_templates
 
@@ -21,7 +21,7 @@ except ImportError:  # running from inside assistant_intent/ without the package
 
 
 def build_dataset(seed: int = 0, n_train: int = 16, n_test: int = 10):
-    validate_templates()
+    validate_templates(TEMPLATES, BASE_SLOTS)
     rng = random.Random(seed)
     st, sv = slots_for("train"), slots_for("test")
 

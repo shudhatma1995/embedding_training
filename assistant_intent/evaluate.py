@@ -4,7 +4,7 @@ evaluate.py  -  Stage 5: measure the trained intent classifier honestly.
 
 Two parts, matching the two things we care about:
 
-PART A  -  Retrieval quality on the 4 REAL intents
+PART A  -  Retrieval quality on the REAL intents
     The classifier is "nearest prototype": prototype[intent] = centroid (mean) of
     that intent's TRAIN embeddings. A test query is labelled by the most similar
     prototype. We report:
@@ -29,7 +29,6 @@ PART B  -  The `none` problem and the threshold fix
 Run:  python evaluate.py            (after train.py has written models/finetuned/)
 """
 import os
-import sys
 import json
 import random
 import argparse
@@ -37,17 +36,13 @@ import argparse
 import numpy as np
 import torch
 
-_CIS = os.path.join(os.path.dirname(__file__), "..", "customer_intent_search")
-sys.path.insert(0, _CIS)
-from tokenizer import SimpleTokenizer   # noqa: E402
-from model import build_model           # noqa: E402
-
-from data import load_by_intent       # noqa: E402  (json I/O lives in data.py)
-from shared import build_prototypes, safe_matmul, make_encoder   # noqa: E402  (encoder-agnostic kernel)
-from intents import REAL_INTENTS, NONE_ID   # noqa: E402  (taxonomy source of truth)
+# Embedder + tokenizer come from customer_intent_search (reused untouched) via cis.py.
+from cis import SimpleTokenizer, build_model
+from data import load_eval_data        # standard (train, test, none) loader
+from shared import build_prototypes, safe_matmul, make_encoder   # encoder-agnostic kernel
+from intents import REAL_INTENTS       # taxonomy source of truth
 
 HERE = os.path.dirname(__file__)
-DATA_DIR = os.path.join(HERE, "data")
 
 
 # ── loading ──────────────────────────────────────────────────────────────────
@@ -229,9 +224,7 @@ def main():
     # REAL_INTENTS is the last-resort fallback for a config without train_intents.
     real_intents = args.intents or config.get("train_intents") or REAL_INTENTS
     print(f"  Evaluating intents: {', '.join(real_intents)}\n")
-    train_groups = load_by_intent(os.path.join(DATA_DIR, "train.json"), real_intents)
-    test_groups = load_by_intent(os.path.join(DATA_DIR, "test.json"), real_intents)
-    none_texts = load_by_intent(os.path.join(DATA_DIR, "test.json"), [NONE_ID])[NONE_ID]
+    train_groups, test_groups, none_texts = load_eval_data(real_intents)
 
     encode = make_encoder(model, tok, device)
     res = evaluate_model(encode, train_groups, test_groups, none_texts)

@@ -9,9 +9,6 @@ on its own, e.g. "does {a|b} only ever pick a or b?".
 import re
 import random
 
-from .slots import BASE_SLOTS
-from .templates import TEMPLATES
-
 _TOKEN = re.compile(r"\{([^{}]+)\}")
 
 
@@ -37,13 +34,13 @@ def expand(template: str, slots: dict, rng: random.Random, k: int) -> list:
     return out
 
 
-def validate_templates() -> None:
-    """Every {slot} (non-inline) token must exist in BASE_SLOTS."""
-    for intent, splits in TEMPLATES.items():
+def validate_templates(templates, base_slots) -> None:
+    """Every {slot} (non-inline) token in `templates` must exist in `base_slots`."""
+    for intent, splits in templates.items():
         for split, tmpls in splits.items():
             for t in tmpls:
                 for body in _TOKEN.findall(t):
                     if "|" in body:
                         continue
-                    assert body in BASE_SLOTS, \
+                    assert body in base_slots, \
                         f"unknown slot '{{{body}}}' in {intent}/{split}: {t!r}"

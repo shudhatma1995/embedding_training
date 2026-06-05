@@ -4,7 +4,7 @@ data.py  -  all the non-training I/O and batch-shaping for the intent pipeline.
 "Side" code only — reading the json, turning queries into positive pairs, shaping
 those pairs into one-pair-per-intent batches, and writing the trained artifacts.
 train.py imports from here so it can stay focused on the learning algorithm itself
-(loss, forward, epoch loop). evaluate.py / experiments.py reuse `load_by_intent`.
+(loss, forward, epoch loop). evaluate.py / experiments.py reuse `load_eval_data`.
 
 Kept dependency-light (json + os + random + torch) and NOT named `evaluate`, so
 nothing on sys.path can shadow it (train.py puts customer_intent_search/ — which
@@ -16,6 +16,11 @@ import random
 from collections import defaultdict
 
 import torch
+
+from intents import NONE_ID   # taxonomy: the out-of-scope label
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(HERE, "data")   # canonical home of train.json / test.json
 
 
 # ── reading ──────────────────────────────────────────────────────────────────
@@ -37,6 +42,18 @@ def intents_in_file(path: str) -> list:
     with open(path) as f:
         rows = json.load(f)
     return sorted({r["intent"] for r in rows})
+
+
+def load_eval_data(real_intents, data_dir=DATA_DIR):
+    """The standard evaluation trio for a set of real intents:
+        (train_groups, test_groups, none_texts)
+    train/test groups are {intent: [texts]}; none_texts is a flat list from test.json.
+    One call so evaluate.py, experiments.py, and the pretrained-baseline script all
+    load identically (no repeated `[NONE_ID][NONE_ID]` boilerplate)."""
+    train_groups = load_by_intent(os.path.join(data_dir, "train.json"), real_intents)
+    test_groups = load_by_intent(os.path.join(data_dir, "test.json"), real_intents)
+    none_texts = load_by_intent(os.path.join(data_dir, "test.json"), [NONE_ID])[NONE_ID]
+    return train_groups, test_groups, none_texts
 
 
 # ── pairing ──────────────────────────────────────────────────────────────────
