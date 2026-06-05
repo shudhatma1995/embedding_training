@@ -7,7 +7,8 @@ stays cleanly mergeable).
 
 Pipeline (built one stage at a time):
     intents.py    - the label schema + annotation guideline  (SOURCE OF TRUTH)
-    make_data.py  - seeds -> template expansion -> train/test split   [next]
+    data_gen/     - seeds -> template expansion -> train/test split   [next]
+                    (run: python -m assistant_intent.data_gen)
     train.py      - contrastive training, adapted to these intents    [later]
     evaluate.py   - Recall@1 / MRR on a held-out set                  [later]
 """

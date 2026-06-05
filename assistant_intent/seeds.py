@@ -3,7 +3,7 @@ seeds.py  -  hand-written SEED phrasings, ~15 per intent.
 ========================================================
 
 These are starting points, not the final training set. In the next step
-(make_data.py) we turn patterns here into templates + slot lists to generate
+(data_gen/) we turn patterns here into templates + slot lists to generate
 hundreds of varied examples. Every line is labelled per the rules in intents.py.
 
 Deliberate design choices baked in:

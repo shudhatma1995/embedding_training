@@ -33,7 +33,7 @@ NONE_ID = "none"
 REAL_INTENTS = [i for i in INTENT_IDS if i != NONE_ID]
 
 # Full spec for each intent. `examples` are CANONICAL illustrations for the
-# guideline (not the training set — seed phrasings come next, in make_data.py).
+# guideline (not the training set — seed phrasings come next, in data_gen/).
 INTENT_SPEC = {
     "answers": {
         "definition": (
