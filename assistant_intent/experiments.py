@@ -82,14 +82,13 @@ def run_one(cfg, seed, device, train_groups, test_groups, none_texts, scratch):
     with contextlib.redirect_stdout(io.StringIO()):     # silence the epoch table
         model, tok = tr.train(args)
 
-    micro, _, _, (protos, intents) = ev.evaluate_real(
-        model, tok, train_groups, test_groups, device)
-    real_max, none_max, _, best, _ = ev.evaluate_none(
-        model, tok, test_groups, none_texts, protos, intents, device)
+    encode = ev.make_encoder(model, tok, device)
+    res = ev.evaluate_model(encode, train_groups, test_groups, none_texts)
+    best = res["test_tuned"]            # full-test τ-optimum (relative config comparison)
     return {
-        "r1": micro["recall@1"],
-        "real_sim": float(real_max.mean()),
-        "none_sim": float(none_max.mean()),
+        "r1": res["micro"]["recall@1"],
+        "real_sim": res["real_sim"],
+        "none_sim": res["none_sim"],
         "overall": best["overall"],
         "none_recall": best["none_recall"],
     }

@@ -1,23 +1,31 @@
 """
-shared.py  -  the nearest-prototype classifier, used by BOTH train.py and evaluate.py.
+shared.py  -  the nearest-prototype classifier kernel, encoder-agnostic.
 ================================================================================
-This is the ONE source of truth for "how do we turn the embedder into a classifier":
+The ONE source of truth for "turn an embedder into a classifier". Everything here
+depends only on an ENCODER — a plain callable:
 
-  build_prototypes - the kernel: encode → mean → L2-normalize, one centroid/intent.
-  proto_recall1    - the in-training quality signal: nearest-prototype Recall@1 on
-                     the held-out test queries.
+    encode(texts: list[str]) -> np.ndarray   # shape [N, D], L2-normalized rows
 
-train.py calls proto_recall1 to track test Recall@1 each epoch; evaluate.py calls
-build_prototypes directly as the canonical classifier. Keeping both here stops the
-training-time and eval-time numbers from silently drifting apart.
+Our from-scratch model is adapted to that interface by `make_encoder`; a pretrained
+model (e.g. sentence-transformers MiniLM) supplies its own one-line adapter. So the
+exact same prototype + threshold evaluation runs against ANY encoder — which is what
+makes an apples-to-apples baseline possible.
 
-Deliberately dependency-light (numpy + torch only — `model.encode` is passed in) and
-NOT named `evaluate`, so nothing on sys.path can shadow it (train.py puts
-customer_intent_search/ — which has its own sentence_transformers-importing
-evaluate.py — at the front of sys.path).
+  make_encoder    - wrap our (model, tok, device) as an Encoder callable.
+  build_prototypes- encode → mean → L2-normalize, one centroid per intent.
+  proto_recall1   - in-training quality signal: nearest-prototype Recall@1 on test.
+
+Deliberately dependency-light (numpy only) and NOT named `evaluate`, so nothing on
+sys.path can shadow it (train.py puts customer_intent_search/ — which has its own
+sentence_transformers-importing evaluate.py — at the front of sys.path).
 """
 import numpy as np
-import torch
+
+
+def make_encoder(model, tok, device):
+    """Adapt our from-scratch model to the Encoder interface: texts -> [N, D]
+    L2-normalized ndarray. model.encode already runs under eval()+no_grad()."""
+    return lambda texts: model.encode(texts, tok, device=device)
 
 
 def safe_matmul(a, b):
@@ -35,8 +43,9 @@ def safe_matmul(a, b):
         return a @ b
 
 
-def build_prototypes(model, tok, train_groups, device):
+def build_prototypes(encode, train_groups):
     """prototype[intent] = L2-normalized MEAN of that intent's train embeddings.
+    `encode` is any Encoder callable (texts -> [N, D] L2-normalized).
 
     Returns (protos, intents):
         protos  [C, D]  one unit vector per intent (the centroids)
@@ -47,32 +56,27 @@ def build_prototypes(model, tok, train_groups, device):
     intents = list(train_groups.keys())
     protos = []
     for it in intents:
-        e = model.encode(train_groups[it], tok, device=device)   # [n,D], L2-normed
+        e = encode(train_groups[it])                             # [n,D], L2-normed
         m = e.mean(axis=0)                                        # centroid
         protos.append(m / (np.linalg.norm(m) + 1e-9))            # back to unit length
     return np.stack(protos), intents                             # [C,D], [C]
 
 
-@torch.no_grad()
-def proto_recall1(model, tok, train_groups, test_groups, device) -> float:
-    """
-    Centroid classifier: prototype[intent] = L2-normalized MEAN of that intent's
-    train embeddings. Each test query is labelled by its nearest prototype (cosine).
-    Returns Recall@1 over the held-out test queries (the real intents).
+def proto_recall1(encode, train_groups, test_groups) -> float:
+    """Centroid-classifier Recall@1 over held-out test queries, for ANY encoder.
+    Each test query is labelled by its nearest prototype (cosine). This is the
+    honest generalization signal — test.json uses unseen phrasings AND entities.
 
-    This is the honest generalization signal: test.json uses unseen phrasings AND
-    unseen entities, so this number reflects pattern-learning, not memorization.
+    No grad / eval-mode handling here: the Encoder owns that (our model.encode runs
+    under eval()+no_grad(); run_epoch re-enables train() at the start of each epoch).
     """
-    model.eval()
-    protos, intents = build_prototypes(model, tok, train_groups, device)  # [C,D], [C]
-
+    protos, intents = build_prototypes(encode, train_groups)
     correct = total = 0
     for ti, it in enumerate(intents):
-        q = model.encode(test_groups[it], tok, device=device)    # [m,D]
+        q = encode(test_groups[it])
         if len(q) == 0:
             continue
         pred = safe_matmul(q, protos.T).argmax(axis=1)          # nearest prototype
         correct += int((pred == ti).sum())
         total += len(q)
-    model.train()
     return correct / max(1, total)

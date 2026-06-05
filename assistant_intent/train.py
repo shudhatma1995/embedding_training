@@ -51,7 +51,7 @@ from model import build_model           # noqa: E402
 
 # Side code (I/O + batch shaping) lives in data.py; the classifier kernel in shared.py.
 from data import load_by_intent, intents_in_file, make_pairs, iter_batches, save_artifacts  # noqa: E402
-from shared import proto_recall1   # noqa: E402
+from shared import proto_recall1, make_encoder   # noqa: E402
 # Intent taxonomy is owned by intents.py (single source of truth); `none` is excluded
 # from the trainable set by construction.
 from intents import REAL_INTENTS, NONE_ID   # noqa: E402
@@ -202,6 +202,7 @@ def train(args):
 
     model = build_model(tok).to(device)
     print(f"  Parameters : {model.n_parameters():,}")
+    encode = make_encoder(model, tok, device)   # Encoder for the in-loop proto metric
 
     # one pair per intent per batch → batch_size == n_intents
     batches_per_epoch = args.pairs_per_intent          # (n_intents pairs each → n_intents-sized batches)
@@ -210,7 +211,7 @@ def train(args):
     scheduler = make_scheduler(optimizer, args.warmup_steps, total_steps)
 
     # BEFORE-training baseline (random init): shows what training actually buys
-    r1_before = proto_recall1(model, tok, train_groups, test_groups, device)
+    r1_before = proto_recall1(encode, train_groups, test_groups)
     print(f"\n  test Recall@1 (random init, before training): {r1_before*100:.1f}%")
     print(f"\n  Training for {args.epochs} epochs "
           f"(batch={n_intents}, τ={args.temperature}, lr={args.lr})...")
@@ -223,7 +224,7 @@ def train(args):
         train_loss, train_acc = run_epoch(
             model, tok, train_groups, none_pool, optimizer, scheduler,
             args.pairs_per_intent, args.temperature, args.none_neg_k, rng, device)
-        test_r1 = proto_recall1(model, tok, train_groups, test_groups, device)
+        test_r1 = proto_recall1(encode, train_groups, test_groups)
         history.append({"loss": train_loss, "train_acc": train_acc, "test_r1": test_r1})
         print(f"  {epoch:>5} | {train_loss:>7.4f} | {train_acc*100:>8.1f}% | "
               f"{test_r1*100:>7.1f}% | {time.time()-t0:>4.1f}s")

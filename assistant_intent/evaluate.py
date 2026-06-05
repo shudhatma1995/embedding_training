@@ -43,7 +43,7 @@ from tokenizer import SimpleTokenizer   # noqa: E402
 from model import build_model           # noqa: E402
 
 from data import load_by_intent       # noqa: E402  (json I/O lives in data.py)
-from shared import build_prototypes, safe_matmul   # noqa: E402  (kernel + FPE-safe matmul)
+from shared import build_prototypes, safe_matmul, make_encoder   # noqa: E402  (encoder-agnostic kernel)
 from intents import REAL_INTENTS, NONE_ID   # noqa: E402  (taxonomy source of truth)
 
 HERE = os.path.dirname(__file__)
@@ -65,14 +65,13 @@ def load_model(model_dir: str, device: str):
     return model, tok, config
 
 
-# ── prototypes ───────────────────────────────────────────────────────────────
-# build_prototypes now lives in protos.py (shared with train.py) — imported above.
+# build_prototypes lives in shared.py (imported above) and takes an Encoder.
 
 
-# ── PART A: retrieval metrics ────────────────────────────────────────────────
-def evaluate_real(model, tok, train_groups, test_groups, device):
-    protos, intents = build_prototypes(model, tok, train_groups, device)
-
+# ── PART A: retrieval metrics (given prototypes) ─────────────────────────────
+def retrieval_metrics(encode, test_groups, protos, intents):
+    """Recall@1 / MRR (micro + per-intent) + the misclassified list, over the real
+    intents. `encode` is the Encoder; `protos`/`intents` come from build_prototypes."""
     per_intent = {}
     rr_all, hit1_all = [], []
     misclassified = []   # (text, true, predicted, top_sim)
@@ -81,7 +80,7 @@ def evaluate_real(model, tok, train_groups, test_groups, device):
         texts = test_groups[it]
         if not texts:
             continue
-        emb = model.encode(texts, tok, device=device)            # [m,D]
+        emb = encode(texts)                                      # [m,D]
         sims = safe_matmul(emb, protos.T)                        # [m,C]
         ranked = np.argsort(-sims, axis=1)                       # [m,C], best first
 
@@ -99,18 +98,18 @@ def evaluate_real(model, tok, train_groups, test_groups, device):
                 misclassified.append((t, it, intents[ranked[j, 0]], float(sims[j].max())))
 
     micro = {"recall@1": float(np.mean(hit1_all)), "mrr": float(np.mean(rr_all))}
-    return micro, per_intent, misclassified, (protos, intents)
+    return micro, per_intent, misclassified
 
 
 # ── PART B: none handling via similarity threshold ───────────────────────────
-def top_sims(model, tok, groups, protos, device):
+def top_sims(encode, groups, protos):
     """For each query return its TOP similarity to any prototype (+ argmax intent)."""
     out = {}
     for it, texts in groups.items():
         if not texts:
             out[it] = (np.empty(0), np.empty(0, dtype=int))
             continue
-        emb = model.encode(texts, tok, device=device)
+        emb = encode(texts)
         sims = safe_matmul(emb, protos.T)
         out[it] = (sims.max(axis=1), sims.argmax(axis=1))
     return out
@@ -119,11 +118,11 @@ def top_sims(model, tok, groups, protos, device):
 TAUS = np.round(np.arange(0.30, 0.96, 0.05), 2)
 
 
-def query_sims(model, tok, groups, none_texts, protos, intents, device):
+def query_sims(encode, groups, none_texts, protos, intents):
     """Per-query TOP similarity to any prototype, for real + none queries.
     Returns (real_max [N], real_correct [N] bool, none_max [M])."""
-    real_top = top_sims(model, tok, groups, protos, device)
-    none_emb = model.encode(none_texts, tok, device=device) if none_texts else np.empty((0, protos.shape[1]))
+    real_top = top_sims(encode, groups, protos)
+    none_emb = encode(none_texts) if none_texts else np.empty((0, protos.shape[1]))
     none_sim = safe_matmul(none_emb, protos.T) if len(none_emb) else np.empty((0, len(intents)))
     none_max = none_sim.max(axis=1) if len(none_sim) else np.empty(0)
 
@@ -155,14 +154,45 @@ def pick_best(rows):
     return max(rows, key=lambda r: r["overall"])
 
 
-def evaluate_none(model, tok, test_groups, none_texts, protos, intents, device):
-    """Sweep τ on the GIVEN set and return the best by overall accuracy.
-    Used by experiments.py for relative config comparison (τ tuned on the set passed
-    in). For an HONEST single-model number, main() tunes τ on a separate val split."""
-    real_max, real_correct, none_max = query_sims(
-        model, tok, test_groups, none_texts, protos, intents, device)
-    rows = tau_sweep(real_max, real_correct, none_max)
-    return real_max, none_max, rows, pick_best(rows), (len(real_max), len(none_max))
+def evaluate_model(encode, train_groups, test_groups, none_texts, val_frac=0.5, split_seed=0):
+    """ONE evaluation, shared by evaluate.py, experiments.py, and the MiniLM baseline.
+    Builds prototypes from `train_groups` using `encode`, then computes everything
+    any caller needs (each reads the fields it wants):
+
+      PART A      micro/per-intent Recall@1 + MRR, misclassified list
+      sims        real_sim / none_sim means + the full-test τ-optimum (`test_tuned`)
+      honest      τ TUNED on a val half, REPORTED on the untouched test half
+                  (+ `optimistic_split`, the test-half optimum, to show the bias)
+
+    Because it depends only on `encode`, the same call evaluates our from-scratch
+    model and a pretrained baseline identically — an apples-to-apples comparison.
+    """
+    protos, intents = build_prototypes(encode, train_groups)
+    micro, per_intent, misclassified = retrieval_metrics(encode, test_groups, protos, intents)
+
+    # full-test none-threshold sims → real_sim/none_sim + the (optimistic) test optimum
+    real_max, real_correct, none_max = query_sims(encode, test_groups, none_texts, protos, intents)
+    test_tuned = pick_best(tau_sweep(real_max, real_correct, none_max))
+
+    # honest τ: tune on a VAL half, freeze, report on the untouched TEST half
+    val_g, val_none, te_g, te_none = split_val_test(test_groups, none_texts, val_frac, split_seed)
+    rmv, rcv, nmv = query_sims(encode, val_g, val_none, protos, intents)
+    rmt, rct, nmt = query_sims(encode, te_g, te_none, protos, intents)
+    val_rows = tau_sweep(rmv, rcv, nmv)
+    tau = pick_best(val_rows)["tau"]
+    honest = metrics_at(tau, rmt, rct, nmt)
+    optimistic = pick_best(tau_sweep(rmt, rct, nmt))
+
+    return {
+        "protos": protos, "intents": intents,
+        "micro": micro, "per_intent": per_intent, "misclassified": misclassified,
+        "real_sim": float(real_max.mean()), "none_sim": float(none_max.mean()),
+        "test_tuned": test_tuned,                    # full-test optimum (relative/ablation)
+        "honest": honest, "honest_tau": tau,         # val-tuned → test-reported (headline)
+        "optimistic_split": optimistic,              # test-half optimum (bias illustration)
+        "val_rows": val_rows,                        # for the printed val sweep
+        "test_real_max": rmt, "test_none_max": nmt,  # for the distribution table
+    }
 
 
 def split_val_test(groups, none_texts, frac=0.5, seed=0):
@@ -203,17 +233,20 @@ def main():
     test_groups = load_by_intent(os.path.join(DATA_DIR, "test.json"), real_intents)
     none_texts = load_by_intent(os.path.join(DATA_DIR, "test.json"), [NONE_ID])[NONE_ID]
 
+    encode = make_encoder(model, tok, device)
+    res = evaluate_model(encode, train_groups, test_groups, none_texts)
+    intents = res["intents"]
+
     print("=" * 64)
     print("PART A — retrieval on the REAL intents (nearest prototype)")
     print("=" * 64)
-    micro, per_intent, misclassified, (protos, intents) = evaluate_real(
-        model, tok, train_groups, test_groups, device)
-    print(f"  micro   Recall@1 {micro['recall@1']*100:5.1f}%   MRR {micro['mrr']:.3f}")
+    print(f"  micro   Recall@1 {res['micro']['recall@1']*100:5.1f}%   MRR {res['micro']['mrr']:.3f}")
     print(f"  {'intent':<13} {'R@1':>7} {'MRR':>7} {'n':>4}")
     for it in intents:
-        m = per_intent[it]
+        m = res["per_intent"][it]
         print(f"  {it:<13} {m['recall@1']*100:6.1f}% {m['mrr']:7.3f} {m['n']:>4}")
 
+    misclassified = res["misclassified"]
     print(f"\n  misclassified ({len(misclassified)}):")
     if not misclassified:
         print("    (none)")
@@ -224,10 +257,7 @@ def main():
     print("PART B — the `none` problem and an HONEST threshold (τ tuned on VAL)")
     print("=" * 64)
 
-    # Split the eval set: TUNE τ on the val half, REPORT on the untouched test half.
-    val_g, val_none, te_g, te_none = split_val_test(test_groups, none_texts, frac=0.5, seed=0)
-    rmax_v, rcorr_v, nmax_v = query_sims(model, tok, val_g, val_none, protos, intents, device)
-    rmax_t, rcorr_t, nmax_t = query_sims(model, tok, te_g, te_none, protos, intents, device)
+    rmax_t, nmax_t = res["test_real_max"], res["test_none_max"]
 
     def pct(a, p):
         return float(np.percentile(a, p)) if len(a) else float("nan")
@@ -238,28 +268,21 @@ def main():
     print(f"    {'none (junk/OOS)':<18} {nmax_t.min():6.2f} {pct(nmax_t,25):6.2f} "
           f"{np.median(nmax_t):7.2f} {nmax_t.mean():6.2f} {nmax_t.max():6.2f}  {len(nmax_t):>3}")
 
-    # tune τ on the VAL half (the test half is never used for selection)
-    rows_val = tau_sweep(rmax_v, rcorr_v, nmax_v)
-    best_val = pick_best(rows_val)
-    tau = best_val["tau"]
+    tau = res["honest_tau"]
     print(f"\n  τ sweep on the VAL half (we pick τ here, then FREEZE it):")
     print(f"    {'τ':>5} {'real_acc':>9} {'none_recall':>12} {'overall':>9}")
-    for r in rows_val:
-        mark = "  ← picked" if r is best_val else ""
+    for r in res["val_rows"]:
+        mark = "  ← picked" if r["tau"] == tau else ""
         print(f"    {r['tau']:>5.2f} {r['real_acc']*100:>8.1f}% "
               f"{r['none_recall']*100:>11.1f}% {r['overall']*100:>8.1f}%{mark}")
 
-    # HONEST: the frozen τ applied to the untouched TEST half
-    honest = metrics_at(tau, rmax_t, rcorr_t, nmax_t)
-    # OPTIMISTIC (biased): the BEST τ chosen ON the test half — what we'd report if we cheated
-    best_test = pick_best(tau_sweep(rmax_t, rcorr_t, nmax_t))
-
+    honest, opt = res["honest"], res["optimistic_split"]
     print(f"\n  HONEST     (τ={tau:.2f} tuned on VAL → reported on TEST):")
     print(f"    real_acc {honest['real_acc']*100:.1f}%, none_recall {honest['none_recall']*100:.1f}%, "
           f"overall {honest['overall']*100:.1f}%")
-    print(f"  OPTIMISTIC (τ={best_test['tau']:.2f} tuned ON test — the old, biased way):")
-    print(f"    overall {best_test['overall']*100:.1f}%")
-    print(f"\n  → optimism bias = {(best_test['overall']-honest['overall'])*100:+.1f} points. "
+    print(f"  OPTIMISTIC (τ={opt['tau']:.2f} tuned ON test — the old, biased way):")
+    print(f"    overall {opt['overall']*100:.1f}%")
+    print(f"\n  → optimism bias = {(opt['overall']-honest['overall'])*100:+.1f} points. "
           f"Tuning τ on the test set overstates accuracy; the val-tuned number is the honest one.")
     print(f"  (small-n caveat: each half is ~{len(rmax_t)} real + {len(nmax_t)} none queries, so "
           f"these move seed-to-seed — the methodology is the point, not the exact figure.)")
