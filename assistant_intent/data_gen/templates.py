@@ -18,6 +18,12 @@ TEMPLATES = {
             "dim the {room} {fixture} to {pct} percent",
             "make the {room} {brighter|darker}",
             "set the {room} {fixture} to {warm white|cool white|daylight}",
+            # realistic-phrasing augmentation (casual / indirect state)
+            "it's too {dark|bright} in the {room}",
+            "the {room} is too {dark|bright}",
+            "i need {more|less} light in the {room}",
+            "can you {brighten|dim} the {room}",
+            "give me some light in the {room}",
         ],
         "test": [
             "can you {turn on|turn off} the {room} {fixture}",
@@ -43,6 +49,11 @@ TEMPLATES = {
             "let's hear some {genre}",
             "throw on {playlist}",
             "queue up {artist} {service_phrase}",
+            # realistic-phrasing augmentation (casual)
+            "put on some {genre}",
+            "play me something {upbeat|chill|relaxing}",
+            "turn the music {up|down}",
+            "gimme some {genre}",
         ],
         "test": [
             "i want to listen to {genre}",
@@ -61,6 +72,12 @@ TEMPLATES = {
             "move my {time} {meeting|call} to {time}",
             "cancel my {time} {meeting|appointment}",
             "what's my {next|first} {meeting|appointment}",
+            # realistic-phrasing augmentation (casual)
+            "what do i have {today|tomorrow|this week}",
+            "don't let me forget to {reminders}",
+            "am i busy {when_phrase}",
+            "put a {meeting|call} with {contact} on my calendar {when_phrase}",
+            "jot down {reminders}",
         ],
         "test": [
             "set up a {meeting|call} with {contact} {when_phrase}",
@@ -80,6 +97,11 @@ TEMPLATES = {
             "{reply to|forward} {contact}'s email",
             "read me my {latest|last} email",
             "check my {inbox|messages}",
+            # realistic-phrasing augmentation (casual)
+            "give {contact} a ring",
+            "shoot {contact} a {text|message}",
+            "let {contact} know i'm running late",
+            "drop {contact} a line",
         ],
         "test": [
             "write an email to {contact}",
@@ -97,6 +119,11 @@ TEMPLATES = {
             "{cancel|stop|pause} {my timer|the timer|the alarm}",
             "{snooze|turn off|dismiss} the alarm",
             "how {much time is|long is} left on my timer",
+            # realistic-phrasing augmentation (casual)
+            "alert me in {duration}",
+            "buzz me in {duration}",
+            "set an alarm so i'm up by {time}",
+            "give me {duration} on a timer",
         ],
         "test": [
             "start a timer for {duration}",
@@ -113,6 +140,12 @@ TEMPLATES = {
             "do i need {an umbrella|a jacket|sunglasses} {today|tomorrow}",
             "how {hot|cold|windy} is it {today|right now|going to be}",
             "what's the weather like in {city}",
+            # realistic-phrasing augmentation (casual)
+            "is it {cold|hot|chilly|warm} out {today|right now}",
+            "what's the temp {today|tomorrow}",
+            "think it'll {rain|snow} {today|later}",
+            "how's the weather looking {today|this week}",
+            "do i need {a coat|a jacket|sunglasses} for {today|tomorrow}",
         ],
         "test": [
             "will it {rain|snow} {today|tomorrow|this weekend}",
@@ -130,6 +163,12 @@ TEMPLATES = {
             "is there traffic {to|on the way to} {place}",
             "find {a gas station|parking|a coffee shop} near {me|here}",
             "take me to {place}",
+            # realistic-phrasing augmentation (casual)
+            "what's the quickest way to {place}",
+            "is there traffic heading to {place}",
+            "get me to {place}",
+            "find {a gas station|parking|a coffee shop} around here",
+            "where's the nearest {gas station|atm|pharmacy}",
         ],
         "test": [
             "how do i get to {place}",
@@ -147,6 +186,11 @@ TEMPLATES = {
             "who {achievement}",
             "how {tall|deep|far|big} is {landmark}",
             "why is {phenomenon}",
+            # realistic-phrasing augmentation (diverse knowledge questions)
+            "what is {topic}",
+            "explain {topic} to me",
+            "tell me about {topic}",
+            "what does {acronym} stand for",
         ],
         "test": [
             "tell me the capital of {country}",

@@ -196,6 +196,22 @@ BASE_SLOTS = {
         "about dinner",
         "that i'm on my way",
     ],
+    # answers — broad knowledge topics (distinct from the wild eval's topics)
+    "topic": [
+        "the speed of light",
+        "photosynthesis",
+        "the stock market",
+        "black holes",
+        "inflation",
+        "the water cycle",
+        "gravity",
+        "evolution",
+        "the great depression",
+        "the human heart",
+        "how airplanes fly",
+        "the northern lights",
+    ],
+    "acronym": ["nasa", "atm", "html", "ceo", "gps", "faq", "url", "wifi"],
 }
 
 # These high-variety slots get split: ~70% of values for train, ~30% for test
