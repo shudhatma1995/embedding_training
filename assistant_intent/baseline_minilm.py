@@ -56,7 +56,7 @@ def make_minilm_encoder(model_name=MINILM, device="cpu", batch_size=64):
                 out.append(mean.cpu().numpy())
         return np.concatenate(out, axis=0)
 
-    return tok, model, encode
+    return model, encode   # tok is captured in the closure; no need to return it
 
 
 def _row(name, res):
@@ -75,7 +75,7 @@ def main():
     train_groups, test_groups, none_texts = load_eval_data(real_intents)
     print(f"  Intents ({len(real_intents)}): {', '.join(real_intents)}")
     print(f"  Loading {MINILM} ...")
-    _, mini_model, mini_encode = make_minilm_encoder(device=device)
+    mini_model, mini_encode = make_minilm_encoder(device=device)
 
     ours_encode = make_encoder(ours_model, ours_tok, device)
 

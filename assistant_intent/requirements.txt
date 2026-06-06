@@ -1,0 +1,8 @@
+# Runtime dependencies for assistant_intent/.
+# The venv is shared with customer_intent_search (which pulls heavier deps of its
+# own — sentence-transformers, sklearn, matplotlib); assistant_intent itself needs
+# only the three below. Loose pins + the versions this was developed/tested against.
+
+torch>=2.0          # tested 2.8.0   — model, training, tensors
+numpy>=1.24         # tested 2.0.2   — prototypes, metrics, similarity matmuls
+transformers>=4.40  # tested 4.57.6  — ONLY for baseline_minilm.py (the MiniLM baseline)
