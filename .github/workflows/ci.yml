@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Cancel superseded runs on the same ref (e.g. rapid pushes to a PR).
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Ruff lint + format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      # Run ruff via uvx (no project env / torch download needed — fast).
+      # Pinned to match the version in .pre-commit-config.yaml so local and
+      # CI never disagree. Both read config from pyproject.toml.
+      - name: Lint
+        run: uvx ruff@0.15.16 check --output-format=github .
+
+      - name: Format check
+        run: uvx ruff@0.15.16 format --check .
