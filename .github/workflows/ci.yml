@@ -44,5 +44,12 @@ jobs:
       - name: Sync dependencies
         run: uv sync
 
-      - name: Run tests
-        run: uv run pytest -q
+      - name: Run tests with coverage
+        run: uv run pytest --cov --cov-report=term-missing --cov-report=xml --cov-fail-under=40
+
+      # Render the coverage table into the run's summary page (visible per run).
+      - name: Coverage summary
+        if: always() # show coverage even when the fail-under gate trips
+        run: |
+          echo "## Coverage (assistant_intent)" >> "$GITHUB_STEP_SUMMARY"
+          uv run coverage report --format=markdown >> "$GITHUB_STEP_SUMMARY"
