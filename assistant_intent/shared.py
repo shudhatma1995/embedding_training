@@ -19,6 +19,7 @@ Deliberately dependency-light (numpy only) and NOT named `evaluate`, so nothing 
 sys.path can shadow it (train.py puts customer_intent_search/ — which has its own
 sentence_transformers-importing evaluate.py — at the front of sys.path).
 """
+
 import numpy as np
 
 
@@ -56,10 +57,10 @@ def build_prototypes(encode, train_groups):
     intents = list(train_groups.keys())
     protos = []
     for it in intents:
-        e = encode(train_groups[it])                             # [n,D], L2-normed
-        m = e.mean(axis=0)                                        # centroid
-        protos.append(m / (np.linalg.norm(m) + 1e-9))            # back to unit length
-    return np.stack(protos), intents                             # [C,D], [C]
+        e = encode(train_groups[it])  # [n,D], L2-normed
+        m = e.mean(axis=0)  # centroid
+        protos.append(m / (np.linalg.norm(m) + 1e-9))  # back to unit length
+    return np.stack(protos), intents  # [C,D], [C]
 
 
 def proto_recall1(encode, train_groups, test_groups) -> float:
@@ -76,7 +77,7 @@ def proto_recall1(encode, train_groups, test_groups) -> float:
         q = encode(test_groups[it])
         if len(q) == 0:
             continue
-        pred = safe_matmul(q, protos.T).argmax(axis=1)          # nearest prototype
+        pred = safe_matmul(q, protos.T).argmax(axis=1)  # nearest prototype
         correct += int((pred == ti).sum())
         total += len(q)
     return correct / max(1, total)

@@ -11,6 +11,7 @@ that directory ALSO has an evaluate.py importing sentence_transformers. Our sibl
 modules are named so nothing there shadows them, and anything that must load our own
 evaluate.py by name (experiments.py) does so by explicit path.
 """
+
 import os
 import sys
 
@@ -18,7 +19,7 @@ _CIS = os.path.join(os.path.dirname(__file__), "..", "customer_intent_search")
 if _CIS not in sys.path:
     sys.path.insert(0, _CIS)
 
-from tokenizer import SimpleTokenizer   # noqa: E402  (resolved from customer_intent_search)
-from model import build_model           # noqa: E402
+from model import build_model  # noqa: E402
+from tokenizer import SimpleTokenizer  # noqa: E402  (resolved from customer_intent_search)
 
 __all__ = ["SimpleTokenizer", "build_model"]

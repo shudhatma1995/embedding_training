@@ -30,10 +30,11 @@ Layout:
 Run:   python -m assistant_intent.data_gen   (writes data/train.json, data/test.json)
 Use:   from assistant_intent.data_gen import build_dataset
 """
+
 from .build import build_dataset
+from .engine import expand, fill, validate_templates
 from .slots import BASE_SLOTS, ENTITY_SLOTS, slots_for
 from .templates import TEMPLATES
-from .engine import fill, expand, validate_templates
 
 __all__ = [
     "build_dataset",

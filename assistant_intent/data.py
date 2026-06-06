@@ -10,17 +10,17 @@ Kept dependency-light (json + os + random + torch) and NOT named `evaluate`, so
 nothing on sys.path can shadow it (train.py puts customer_intent_search/ — which
 has its own sentence_transformers-importing evaluate.py — at the front of sys.path).
 """
-import os
+
 import json
+import os
 import random
 from collections import defaultdict
 
 import torch
-
-from intents import NONE_ID   # taxonomy: the out-of-scope label
+from intents import NONE_ID  # taxonomy: the out-of-scope label
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-DATA_DIR = os.path.join(HERE, "data")   # canonical home of train.json / test.json
+DATA_DIR = os.path.join(HERE, "data")  # canonical home of train.json / test.json
 
 
 # ── reading ──────────────────────────────────────────────────────────────────
@@ -83,14 +83,14 @@ def iter_batches(A, P, I, rng: random.Random):
     """
     by = defaultdict(list)
     for idx, intent in enumerate(I):
-        by[intent].append(idx)                 # group pair-indices by intent
+        by[intent].append(idx)  # group pair-indices by intent
     for v in by.values():
         rng.shuffle(v)
     n_intents = len(by)
     rounds = max(len(v) for v in by.values())
     for r in range(rounds):
         batch = [v[r] for v in by.values() if r < len(v)]
-        if len(batch) == n_intents:           # full batch only
+        if len(batch) == n_intents:  # full batch only
             yield [A[i] for i in batch], [P[i] for i in batch]
 
 

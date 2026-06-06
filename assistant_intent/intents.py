@@ -22,8 +22,17 @@ theme grows to ~4+ distinct actions or coarse classes start getting confused).
 
 # Stable ids. Data files and the trained model refer to these strings —
 # don't rename casually once data exists.
-INTENT_IDS = ["answers", "media", "smart_home", "productivity", "communication",
-              "timers_alarms", "weather", "navigation", "none"]
+INTENT_IDS = [
+    "answers",
+    "media",
+    "smart_home",
+    "productivity",
+    "communication",
+    "timers_alarms",
+    "weather",
+    "navigation",
+    "none",
+]
 
 # `none` is the out-of-scope class: handled by a similarity threshold / negatives
 # at train time, NEVER trained as a positive prototype (see NONE_HANDLING below).
@@ -232,7 +241,7 @@ def print_guideline() -> None:
         spec = INTENT_SPEC[iid]
         print(f"[{iid}]")
         print(f"  def : {spec['definition']}")
-        print(f"  yes : " + " | ".join(spec["examples"]))
+        print("  yes : " + " | ".join(spec["examples"]))
         for rule in spec["not"]:
             print(f"  not : {rule}")
         print()

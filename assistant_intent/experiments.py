@@ -23,18 +23,18 @@ Clean comparisons
 Run:  python experiments.py                 (5 seeds, ~2 min on CPU)
       python experiments.py --seeds 0 1 2    (fewer/more seeds)
 """
-import os
-import io
-import shutil
+
 import argparse
 import contextlib
 import importlib.util
+import io
+import os
+import shutil
 
 import numpy as np
 import torch
-
-from data import load_eval_data       # standard (train, test, none) loader
-from intents import REAL_INTENTS      # taxonomy source of truth
+from data import load_eval_data  # standard (train, test, none) loader
+from intents import REAL_INTENTS  # taxonomy source of truth
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -56,14 +56,16 @@ ev = _load_local("ai_evaluate", "evaluate.py")
 # Keying results by id means renaming a label can't silently break the verdicts.
 CONFIGS = [
     {"id": "A", "label": "real-only-vocab", "none_in_vocab": False, "none_neg_k": 0},
-    {"id": "C", "label": "none-in-vocab",   "none_in_vocab": True,  "none_neg_k": 0},
-    {"id": "B", "label": "+negatives k=8",  "none_in_vocab": True,  "none_neg_k": 8},
+    {"id": "C", "label": "none-in-vocab", "none_in_vocab": True, "none_neg_k": 0},
+    {"id": "B", "label": "+negatives k=8", "none_in_vocab": True, "none_neg_k": 8},
 ]
 
 # (metric key, column header, format-as-percent?) — one place drives table + per-seed line.
 METRIC_COLS = [
-    ("r1", "real R@1", True), ("real_sim", "real sim", False),
-    ("none_sim", "none sim", False), ("overall", "best overall", True),
+    ("r1", "real R@1", True),
+    ("real_sim", "real sim", False),
+    ("none_sim", "none sim", False),
+    ("overall", "best overall", True),
     ("none_recall", "none recall", True),
 ]
 
@@ -82,12 +84,12 @@ def run_one(cfg, seed, device, train_groups, test_groups, none_texts, scratch):
     args.none_neg_k = cfg["none_neg_k"]
     args.none_in_vocab = cfg["none_in_vocab"]
     args.output_dir = scratch
-    with contextlib.redirect_stdout(io.StringIO()):     # silence the epoch table
+    with contextlib.redirect_stdout(io.StringIO()):  # silence the epoch table
         model, tok = tr.train(args)
 
     encode = ev.make_encoder(model, tok, device)
     res = ev.evaluate_model(encode, train_groups, test_groups, none_texts)
-    best = res["test_tuned"]            # full-test τ-optimum (relative config comparison)
+    best = res["test_tuned"]  # full-test τ-optimum (relative config comparison)
     return {
         "r1": res["micro"]["recall@1"],
         "real_sim": res["real_sim"],
@@ -101,7 +103,7 @@ def ms(vals, pct=False):
     """Format a list as 'mean±std' (as percentages if pct)."""
     a = np.array(vals)
     if pct:
-        return f"{a.mean()*100:4.1f}±{a.std()*100:3.1f}"
+        return f"{a.mean() * 100:4.1f}±{a.std() * 100:3.1f}"
     return f"{a.mean():.2f}±{a.std():.2f}"
 
 
@@ -113,9 +115,11 @@ def run_grid(seeds, device, data, scratch):
         for cfg in CONFIGS:
             m = run_one(cfg, seed, device, train_groups, test_groups, none_texts, scratch)
             results[cfg["id"]].append(m)
-            print(f"  seed {seed} | {display(cfg):<20} "
-                  f"R@1 {m['r1']*100:5.1f}%  none_sim {m['none_sim']:.2f}  "
-                  f"overall {m['overall']*100:5.1f}%")
+            print(
+                f"  seed {seed} | {display(cfg):<20} "
+                f"R@1 {m['r1'] * 100:5.1f}%  none_sim {m['none_sim']:.2f}  "
+                f"overall {m['overall'] * 100:5.1f}%"
+            )
     return results
 
 
@@ -135,13 +139,16 @@ def print_table(results, n_seeds):
 
 def print_verdicts(results):
     """The two clean comparisons, referencing configs by id (A/B/C), not by label."""
+
     def mean(cid, key):
         return float(np.mean([r[key] for r in results[cid]]))
 
     def verdict(title, left, right):
-        print(f"    {title:<26}: real R@1 {mean(left,'r1')*100:.1f}% → {mean(right,'r1')*100:.1f}%, "
-              f"none_sim {mean(left,'none_sim'):.2f} → {mean(right,'none_sim'):.2f}, "
-              f"overall {mean(left,'overall')*100:.1f}% → {mean(right,'overall')*100:.1f}%")
+        print(
+            f"    {title:<26}: real R@1 {mean(left, 'r1') * 100:.1f}% → {mean(right, 'r1') * 100:.1f}%, "
+            f"none_sim {mean(left, 'none_sim'):.2f} → {mean(right, 'none_sim'):.2f}, "
+            f"overall {mean(left, 'overall') * 100:.1f}% → {mean(right, 'overall') * 100:.1f}%"
+        )
 
     print("\n  verdicts:")
     verdict("A vs C (vocab effect)", "A", "C")
@@ -155,7 +162,7 @@ def main():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     scratch = os.path.join(HERE, "models", "_ablation_tmp")
 
-    eval_data = load_eval_data(REAL_INTENTS)   # (train_groups, test_groups, none_texts)
+    eval_data = load_eval_data(REAL_INTENTS)  # (train_groups, test_groups, none_texts)
 
     print("=" * 78)
     print(f"MULTI-SEED ABLATION  (seeds={args.seeds}, {len(args.seeds)} runs per config)")

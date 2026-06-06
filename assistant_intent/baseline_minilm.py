@@ -14,6 +14,7 @@ The encoder abstraction is what makes this trivial: MiniLM just needs its own
 Requires:  pip install transformers   (the venv is otherwise torch + numpy only)
 Run:       python baseline_minilm.py  (first run downloads ~90MB to ~/.cache/huggingface)
 """
+
 import os
 
 import numpy as np
@@ -22,11 +23,10 @@ import torch
 # Local modules first (none of these put customer_intent_search/ on sys.path except
 # `evaluate`, via cis — and by then `evaluate` has already resolved to ours).
 from data import load_eval_data
+from evaluate import evaluate_model, load_model
 from intents import REAL_INTENTS
 from shared import make_encoder
-from evaluate import evaluate_model, load_model
-
-from transformers import AutoTokenizer, AutoModel   # noqa: E402
+from transformers import AutoModel, AutoTokenizer  # noqa: E402
 
 HERE = os.path.dirname(__file__)
 MINILM = "sentence-transformers/all-MiniLM-L6-v2"
@@ -45,25 +45,32 @@ def make_minilm_encoder(model_name=MINILM, device="cpu", batch_size=64):
         out = []
         with torch.no_grad():
             for i in range(0, len(texts), batch_size):
-                enc = tok(texts[i:i + batch_size], padding=True, truncation=True,
-                          max_length=128, return_tensors="pt").to(device)
-                hidden = model(**enc).last_hidden_state              # [B, L, D]
-                mask = enc["attention_mask"].unsqueeze(-1).float()   # [B, L, 1]
-                summed = (hidden * mask).sum(dim=1)                  # [B, D]
-                counts = mask.sum(dim=1).clamp(min=1e-9)             # [B, 1]
-                mean = summed / counts                              # mean over real tokens
+                enc = tok(
+                    texts[i : i + batch_size],
+                    padding=True,
+                    truncation=True,
+                    max_length=128,
+                    return_tensors="pt",
+                ).to(device)
+                hidden = model(**enc).last_hidden_state  # [B, L, D]
+                mask = enc["attention_mask"].unsqueeze(-1).float()  # [B, L, 1]
+                summed = (hidden * mask).sum(dim=1)  # [B, D]
+                counts = mask.sum(dim=1).clamp(min=1e-9)  # [B, 1]
+                mean = summed / counts  # mean over real tokens
                 mean = torch.nn.functional.normalize(mean, p=2, dim=1)
                 out.append(mean.cpu().numpy())
         return np.concatenate(out, axis=0)
 
-    return model, encode   # tok is captured in the closure; no need to return it
+    return model, encode  # tok is captured in the closure; no need to return it
 
 
 def _row(name, res):
     h = res["honest"]
-    return (f"  {name:<22} {res['micro']['recall@1']*100:6.1f}% {res['micro']['mrr']:6.3f} "
-            f"{res['real_sim']:7.2f} {res['none_sim']:7.2f}   "
-            f"{h['overall']*100:6.1f}% {h['none_recall']*100:7.1f}%")
+    return (
+        f"  {name:<22} {res['micro']['recall@1'] * 100:6.1f}% {res['micro']['mrr']:6.3f} "
+        f"{res['real_sim']:7.2f} {res['none_sim']:7.2f}   "
+        f"{h['overall'] * 100:6.1f}% {h['none_recall'] * 100:7.1f}%"
+    )
 
 
 def main():
@@ -88,19 +95,25 @@ def main():
     print("\n" + "=" * 78)
     print("  OURS (from scratch)  vs  all-MiniLM-L6-v2 (pretrained)  — same eval harness")
     print("=" * 78)
-    print(f"  {'model':<22} {'R@1':>7} {'MRR':>6} {'realSim':>7} {'noneSim':>7}   "
-          f"{'honest':>7} {'noneRec':>8}")
-    print(_row(f"ours ({ours_params/1e6:.2f}M)", ours))
-    print(_row(f"MiniLM ({mini_params/1e6:.0f}M)", mini))
+    print(
+        f"  {'model':<22} {'R@1':>7} {'MRR':>6} {'realSim':>7} {'noneSim':>7}   "
+        f"{'honest':>7} {'noneRec':>8}"
+    )
+    print(_row(f"ours ({ours_params / 1e6:.2f}M)", ours))
+    print(_row(f"MiniLM ({mini_params / 1e6:.0f}M)", mini))
 
     print("\n  per-intent R@1:")
     print(f"    {'intent':<14} {'ours':>7} {'MiniLM':>8}")
     for it in ours["intents"]:
-        print(f"    {it:<14} {ours['per_intent'][it]['recall@1']*100:6.1f}% "
-              f"{mini['per_intent'][it]['recall@1']*100:7.1f}%")
+        print(
+            f"    {it:<14} {ours['per_intent'][it]['recall@1'] * 100:6.1f}% "
+            f"{mini['per_intent'][it]['recall@1'] * 100:7.1f}%"
+        )
 
-    print(f"\n  read: 'honest' = overall acc (real+none) at the val-tuned τ; "
-          f"'noneSim' lower = junk pushed further from prototypes.")
+    print(
+        "\n  read: 'honest' = overall acc (real+none) at the val-tuned τ; "
+        "'noneSim' lower = junk pushed further from prototypes."
+    )
 
 
 if __name__ == "__main__":
