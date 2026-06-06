@@ -18,6 +18,7 @@ dev = [
     "ruff>=0.9",
     "pre-commit>=4.0",
     "pytest>=8.0",
+    "pytest-cov>=5.0",
 ]
 
 # This is an application/experiment repo, not an installable library,
@@ -29,6 +30,19 @@ package = false
 testpaths = ["tests"]
 markers = [
     "slow: end-to-end tests that touch torch + the real data files",
+]
+
+[tool.coverage.run]
+# Measure the whole assistant_intent package so untested scripts stay VISIBLE
+# in the report (the borrowed tokenizer/model in customer_intent_search are out
+# of scope here). `--cov` with no arg picks this up.
+source = ["assistant_intent"]
+omit = ["assistant_intent/__init__.py"]
+
+[tool.coverage.report]
+show_missing = true
+exclude_also = [
+    "if __name__ == .__main__.:",  # CLI entry points, not unit-tested
 ]
 
 [tool.ruff]
