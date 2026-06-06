@@ -32,7 +32,7 @@ SEEDS = {
         "how tall is mount everest",
         "what's 15 percent of 80",
         "who won the 2022 world cup",
-        "what time is it in tokyo",                 # collision: time q but NO app -> answers
+        "what time is it in tokyo",  # collision: time q but NO app -> answers
         "how do you say thank you in french",
         "what's the capital of australia",
         "how many ounces are in a pound",
@@ -60,8 +60,8 @@ SEEDS = {
         "play something relaxing",
         "stop the music",
         "play lofi beats on spotify",
-        "turn on some music",                       # collision: "turn on" + music -> media
-        "i feel like listening to some jazz",       # desire form (helps "i want to listen to ...")
+        "turn on some music",  # collision: "turn on" + music -> media
+        "i feel like listening to some jazz",  # desire form (helps "i want to listen to ...")
         "i'd like to hear the beatles",
     ],
     "smart_home": [
@@ -69,7 +69,7 @@ SEEDS = {
         "lights off",
         "dim the bedroom lights to 50 percent",
         "switch off the kitchen light",
-        "turn on the lights",                       # collision: "turn on" + lights -> smart_home
+        "turn on the lights",  # collision: "turn on" + lights -> smart_home
         "make it brighter in here",
         "turn off all the lights",
         "set the lights to warm white",
@@ -84,7 +84,7 @@ SEEDS = {
     "productivity": [
         # calendar + reminders/tasks (email moved to `communication`)
         "schedule a meeting with john tomorrow at 3",
-        "what's on my calendar today",              # collision: question, but needs app -> productivity
+        "what's on my calendar today",  # collision: question, but needs app -> productivity
         "add a dentist appointment on friday",
         "remind me to call the bank",
         "move my 2pm meeting to 4",
@@ -130,7 +130,7 @@ SEEDS = {
         "pause the timer",
         "set an alarm for noon",
         "snooze the alarm",
-        "turn off the alarm",                       # collision: "turn off" but alarm, not lights -> timers_alarms
+        "turn off the alarm",  # collision: "turn off" but alarm, not lights -> timers_alarms
         "start a 30 second timer",
         "set a timer for the pasta",
         "wake me at 8 in the morning",
@@ -160,7 +160,7 @@ SEEDS = {
         "is there traffic on the way to the office",
         "find a gas station near me",
         "take me to the nearest pharmacy",
-        "how far is the grocery store",             # collision: "how far" but a reachable place -> navigation
+        "how far is the grocery store",  # collision: "how far" but a reachable place -> navigation
         "directions to the train station",
         "what's the best route home",
         "how's traffic right now",
@@ -175,15 +175,15 @@ SEEDS = {
         "book me a flight to paris",
         "order me a pizza",
         "ugh what a day",
-        "call me an uber",                          # collision: "call" but not a person -> none (ride booking)
+        "call me an uber",  # collision: "call" but not a person -> none (ride booking)
         "translate this sentence into spanish",
-        "play with my dog",                         # collision: "play" but NOT media -> none
+        "play with my dog",  # collision: "play" but NOT media -> none
         "i think i left the stove on",
         "take a selfie",
-        "open the garage door",                     # collision: device, but not lights -> none (v1 scope)
-        "add milk to my shopping list",             # collision: "add ..." but not calendar/email -> none
+        "open the garage door",  # collision: device, but not lights -> none (v1 scope)
+        "add milk to my shopping list",  # collision: "add ..." but not calendar/email -> none
         "mmm okay sure",
-        "what should i cook for dinner",            # subjective/open, not a knowledge lookup -> none
+        "what should i cook for dinner",  # subjective/open, not a knowledge lookup -> none
     ],
 }
 

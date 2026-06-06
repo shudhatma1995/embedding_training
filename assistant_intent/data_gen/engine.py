@@ -6,19 +6,22 @@ sentences. Knows nothing about which intents exist -- it just resolves {slot}
 (lookup) and {a|b|c} (inline choice) tokens. Kept separate so it can be tested
 on its own, e.g. "does {a|b} only ever pick a or b?".
 """
-import re
+
 import random
+import re
 
 _TOKEN = re.compile(r"\{([^{}]+)\}")
 
 
 def fill(template: str, slots: dict, rng: random.Random) -> str:
     """Replace {slot} (lookup) or {a|b|c} (inline choice) tokens; tidy spaces."""
+
     def repl(m):
         body = m.group(1)
         if "|" in body:
             return rng.choice(body.split("|"))
         return rng.choice(slots[body])
+
     return re.sub(r"\s+", " ", _TOKEN.sub(repl, template)).strip()
 
 
@@ -42,5 +45,6 @@ def validate_templates(templates, base_slots) -> None:
                 for body in _TOKEN.findall(t):
                     if "|" in body:
                         continue
-                    assert body in base_slots, \
+                    assert body in base_slots, (
                         f"unknown slot '{{{body}}}' in {intent}/{split}: {t!r}"
+                    )

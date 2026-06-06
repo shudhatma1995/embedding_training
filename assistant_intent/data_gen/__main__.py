@@ -3,10 +3,11 @@ __main__.py  -  CLI: build the dataset, write json, print a readable report.
 ================================================================================
 Run:  python -m assistant_intent.data_gen            (writes ../data/train.json, ../data/test.json)
 """
-import os
-import json
-import random
+
 import argparse
+import json
+import os
+import random
 from collections import Counter
 
 from .build import build_dataset

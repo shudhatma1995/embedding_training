@@ -1,0 +1,50 @@
+[project]
+name = "embedding-training"
+version = "0.1.0"
+description = "Experiments in training and evaluating sentence-embedding models for intent search"
+requires-python = ">=3.12"
+dependencies = [
+    "torch>=2.8.0",
+    "numpy>=2.0,<3",
+    "transformers>=4.57",
+    "tqdm>=4.65",
+    "sentence-transformers>=3.0",
+    "scikit-learn>=1.3",
+    "matplotlib>=3.7",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.9",
+    "pre-commit>=4.0",
+]
+
+# This is an application/experiment repo, not an installable library,
+# so uv should manage the environment without trying to build the project.
+[tool.uv]
+package = false
+
+[tool.ruff]
+# Match the Python version we target.
+target-version = "py312"
+line-length = 100
+# Don't lint the virtualenv or generated/result artifacts.
+# customer_intent_search/ is excluded for now — format it in its own PR by
+# removing it from this list (it has pre-existing lint that isn't in scope here).
+extend-exclude = [".venv", "models", "results", "customer_intent_search"]
+
+[tool.ruff.lint]
+# A sensible, non-noisy starter set:
+#   E/W = pycodestyle, F = pyflakes (real bugs: unused imports, undefined names),
+#   I = isort (import ordering), UP = pyupgrade, B = bugbear (common pitfalls).
+select = ["E", "W", "F", "I", "UP", "B"]
+ignore = [
+    "E501",   # line length is handled by the formatter, not the linter
+    "E741",   # "ambiguous" names like I/A/P — idiomatic for math/ML tensor code here
+    "B905",   # zip() without strict= — noisy; paired iterables here are equal-length by construction
+]
+
+[tool.ruff.format]
+# Defaults are good (black-compatible). Explicit for clarity.
+quote-style = "double"
+indent-style = "space"

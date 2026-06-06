@@ -1,0 +1,28 @@
+# Run automatically on `git commit`. Install once with: uv run pre-commit install
+# Run manually on everything with:  uv run pre-commit run --all-files
+repos:
+  # Ruff: lint (with autofix) and format, matching the config in pyproject.toml.
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.16
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+      - id: ruff-format
+
+  # Small, universally-useful hygiene checks.
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      # Skip generated artifacts (model dirs, results, generated data JSON) —
+      # these are outputs, not source, and get rewritten by training runs.
+      - id: trailing-whitespace
+        exclude: ^(models|results|.*/data)/
+      - id: end-of-file-fixer
+        exclude: ^(models|results|.*/data)/
+      - id: check-merge-conflict
+      - id: check-yaml
+      - id: check-toml
+      # Safety net: block accidentally committing big artifacts (datasets,
+      # full HF model dirs). Generous limit so normal experiment weights pass.
+      - id: check-added-large-files
+        args: [--maxkb=10240]
