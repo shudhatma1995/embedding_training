@@ -17,12 +17,19 @@ dependencies = [
 dev = [
     "ruff>=0.9",
     "pre-commit>=4.0",
+    "pytest>=8.0",
 ]
 
 # This is an application/experiment repo, not an installable library,
 # so uv should manage the environment without trying to build the project.
 [tool.uv]
 package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "slow: end-to-end tests that touch torch + the real data files",
+]
 
 [tool.ruff]
 # Match the Python version we target.
