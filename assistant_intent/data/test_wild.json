@@ -1,0 +1,490 @@
+[
+  {
+    "text": "hey how many continents are there",
+    "intent": "answers"
+  },
+  {
+    "text": "who's the current president of france",
+    "intent": "answers"
+  },
+  {
+    "text": "is a tomato a fruit or a vegetable",
+    "intent": "answers"
+  },
+  {
+    "text": "whats the boiling point of water",
+    "intent": "answers"
+  },
+  {
+    "text": "how long do dogs usually live for",
+    "intent": "answers"
+  },
+  {
+    "text": "what's that movie with the blue aliens called",
+    "intent": "answers"
+  },
+  {
+    "text": "explain how vaccines work",
+    "intent": "answers"
+  },
+  {
+    "text": "what does gdp actually stand for",
+    "intent": "answers"
+  },
+  {
+    "text": "roughly how far is the sun from earth",
+    "intent": "answers"
+  },
+  {
+    "text": "who wrote romeo and juliet again",
+    "intent": "answers"
+  },
+  {
+    "text": "remind me how many feet are in a mile",
+    "intent": "answers"
+  },
+  {
+    "text": "is it true that goldfish have a 3 second memory",
+    "intent": "answers"
+  },
+  {
+    "text": "put some music on",
+    "intent": "media"
+  },
+  {
+    "text": "i wanna hear something upbeat",
+    "intent": "media"
+  },
+  {
+    "text": "can we get some tunes going",
+    "intent": "media"
+  },
+  {
+    "text": "throw on a podcast",
+    "intent": "media"
+  },
+  {
+    "text": "next one please",
+    "intent": "media"
+  },
+  {
+    "text": "make it a bit louder",
+    "intent": "media"
+  },
+  {
+    "text": "ugh skip this song",
+    "intent": "media"
+  },
+  {
+    "text": "play that one song from frozen",
+    "intent": "media"
+  },
+  {
+    "text": "shuffle everything",
+    "intent": "media"
+  },
+  {
+    "text": "pause it for a sec",
+    "intent": "media"
+  },
+  {
+    "text": "can you put on some background music",
+    "intent": "media"
+  },
+  {
+    "text": "crank it up",
+    "intent": "media"
+  },
+  {
+    "text": "it's too bright in here",
+    "intent": "smart_home"
+  },
+  {
+    "text": "i can't see anything in here",
+    "intent": "smart_home"
+  },
+  {
+    "text": "kill the lights",
+    "intent": "smart_home"
+  },
+  {
+    "text": "can we get some light in here",
+    "intent": "smart_home"
+  },
+  {
+    "text": "make it cozy in the living room",
+    "intent": "smart_home"
+  },
+  {
+    "text": "lights down please",
+    "intent": "smart_home"
+  },
+  {
+    "text": "it's way too dark",
+    "intent": "smart_home"
+  },
+  {
+    "text": "shut the lights off, i'm heading to bed",
+    "intent": "smart_home"
+  },
+  {
+    "text": "brighten things up a bit",
+    "intent": "smart_home"
+  },
+  {
+    "text": "set the bedroom to something softer",
+    "intent": "smart_home"
+  },
+  {
+    "text": "the hallway's pitch black",
+    "intent": "smart_home"
+  },
+  {
+    "text": "dim it a little",
+    "intent": "smart_home"
+  },
+  {
+    "text": "don't let me forget to call the dentist",
+    "intent": "productivity"
+  },
+  {
+    "text": "what've i got going on tomorrow",
+    "intent": "productivity"
+  },
+  {
+    "text": "block out some time friday morning",
+    "intent": "productivity"
+  },
+  {
+    "text": "push my 3 o'clock back an hour",
+    "intent": "productivity"
+  },
+  {
+    "text": "am i busy tonight",
+    "intent": "productivity"
+  },
+  {
+    "text": "jot down a reminder to return the library books",
+    "intent": "productivity"
+  },
+  {
+    "text": "when's my next thing",
+    "intent": "productivity"
+  },
+  {
+    "text": "clear my afternoon",
+    "intent": "productivity"
+  },
+  {
+    "text": "put lunch with sarah on my calendar for thursday",
+    "intent": "productivity"
+  },
+  {
+    "text": "do i have any free time this week",
+    "intent": "productivity"
+  },
+  {
+    "text": "move tomorrow's standup to the afternoon",
+    "intent": "productivity"
+  },
+  {
+    "text": "what's first on my schedule monday",
+    "intent": "productivity"
+  },
+  {
+    "text": "ring my mom",
+    "intent": "communication"
+  },
+  {
+    "text": "shoot dad a quick text",
+    "intent": "communication"
+  },
+  {
+    "text": "tell sarah i'm running late",
+    "intent": "communication"
+  },
+  {
+    "text": "did anyone email me",
+    "intent": "communication"
+  },
+  {
+    "text": "get my boss on the phone",
+    "intent": "communication"
+  },
+  {
+    "text": "drop priya a line",
+    "intent": "communication"
+  },
+  {
+    "text": "let the team know i'll be there soon",
+    "intent": "communication"
+  },
+  {
+    "text": "any new messages for me",
+    "intent": "communication"
+  },
+  {
+    "text": "send grandma a note saying happy birthday",
+    "intent": "communication"
+  },
+  {
+    "text": "read me my unread emails",
+    "intent": "communication"
+  },
+  {
+    "text": "facetime my brother",
+    "intent": "communication"
+  },
+  {
+    "text": "reply to that last email from alex",
+    "intent": "communication"
+  },
+  {
+    "text": "wake me up in the morning",
+    "intent": "timers_alarms"
+  },
+  {
+    "text": "ping me in 20",
+    "intent": "timers_alarms"
+  },
+  {
+    "text": "buzz me when ten minutes is up",
+    "intent": "timers_alarms"
+  },
+  {
+    "text": "i need to be up by 6",
+    "intent": "timers_alarms"
+  },
+  {
+    "text": "give me a countdown from five minutes",
+    "intent": "timers_alarms"
+  },
+  {
+    "text": "kill the timer",
+    "intent": "timers_alarms"
+  },
+  {
+    "text": "how much longer on the timer",
+    "intent": "timers_alarms"
+  },
+  {
+    "text": "set something for half an hour",
+    "intent": "timers_alarms"
+  },
+  {
+    "text": "snooze it",
+    "intent": "timers_alarms"
+  },
+  {
+    "text": "let me know when 15 minutes have passed",
+    "intent": "timers_alarms"
+  },
+  {
+    "text": "wake me before noon",
+    "intent": "timers_alarms"
+  },
+  {
+    "text": "start a two minute timer for the eggs",
+    "intent": "timers_alarms"
+  },
+  {
+    "text": "do i need a coat today",
+    "intent": "weather"
+  },
+  {
+    "text": "is it gonna be nice out",
+    "intent": "weather"
+  },
+  {
+    "text": "should i grab an umbrella",
+    "intent": "weather"
+  },
+  {
+    "text": "what's it like outside right now",
+    "intent": "weather"
+  },
+  {
+    "text": "gonna rain later?",
+    "intent": "weather"
+  },
+  {
+    "text": "how cold is it out there",
+    "intent": "weather"
+  },
+  {
+    "text": "is it sweater weather",
+    "intent": "weather"
+  },
+  {
+    "text": "whats the temp gonna be tomorrow",
+    "intent": "weather"
+  },
+  {
+    "text": "any chance of snow this week",
+    "intent": "weather"
+  },
+  {
+    "text": "is it nice in miami right now",
+    "intent": "weather"
+  },
+  {
+    "text": "do i need sunscreen today",
+    "intent": "weather"
+  },
+  {
+    "text": "how's the weekend looking weather wise",
+    "intent": "weather"
+  },
+  {
+    "text": "how do i get home from here",
+    "intent": "navigation"
+  },
+  {
+    "text": "is there much traffic on the way",
+    "intent": "navigation"
+  },
+  {
+    "text": "find me a coffee shop nearby",
+    "intent": "navigation"
+  },
+  {
+    "text": "how far is it to the airport",
+    "intent": "navigation"
+  },
+  {
+    "text": "whats the fastest way to the office",
+    "intent": "navigation"
+  },
+  {
+    "text": "where's the closest gas station",
+    "intent": "navigation"
+  },
+  {
+    "text": "give me directions to the new place downtown",
+    "intent": "navigation"
+  },
+  {
+    "text": "how long till i get there",
+    "intent": "navigation"
+  },
+  {
+    "text": "any backups on the highway right now",
+    "intent": "navigation"
+  },
+  {
+    "text": "take me to grandma's house",
+    "intent": "navigation"
+  },
+  {
+    "text": "what's the best route to the stadium",
+    "intent": "navigation"
+  },
+  {
+    "text": "is the bridge backed up",
+    "intent": "navigation"
+  },
+  {
+    "text": "i'm so bored",
+    "intent": "none"
+  },
+  {
+    "text": "ugh i'm exhausted",
+    "intent": "none"
+  },
+  {
+    "text": "i think i left the oven on",
+    "intent": "none"
+  },
+  {
+    "text": "lol that's hilarious",
+    "intent": "none"
+  },
+  {
+    "text": "mmm not sure about that",
+    "intent": "none"
+  },
+  {
+    "text": "whatever you say",
+    "intent": "none"
+  },
+  {
+    "text": "order takeout for dinner",
+    "intent": "none"
+  },
+  {
+    "text": "book a table for two tonight",
+    "intent": "none"
+  },
+  {
+    "text": "add eggs to my shopping list",
+    "intent": "none"
+  },
+  {
+    "text": "open the blinds in the bedroom",
+    "intent": "none"
+  },
+  {
+    "text": "take a photo",
+    "intent": "none"
+  },
+  {
+    "text": "send fifty dollars to john",
+    "intent": "none"
+  },
+  {
+    "text": "set up my new printer",
+    "intent": "none"
+  },
+  {
+    "text": "call me an ambulance",
+    "intent": "none"
+  },
+  {
+    "text": "translate good morning into spanish",
+    "intent": "none"
+  },
+  {
+    "text": "play a game of tic tac toe",
+    "intent": "none"
+  },
+  {
+    "text": "turn up the thermostat",
+    "intent": "none"
+  },
+  {
+    "text": "what should i wear today",
+    "intent": "none"
+  },
+  {
+    "text": "remind me why i even bother",
+    "intent": "none"
+  },
+  {
+    "text": "tell me a joke",
+    "intent": "none"
+  },
+  {
+    "text": "what's your name",
+    "intent": "none"
+  },
+  {
+    "text": "are you a robot",
+    "intent": "none"
+  },
+  {
+    "text": "asdfghjkl",
+    "intent": "none"
+  },
+  {
+    "text": "blah blah just testing this",
+    "intent": "none"
+  },
+  {
+    "text": "qwerty mcqwerterson",
+    "intent": "none"
+  },
+  {
+    "text": "umm hold on",
+    "intent": "none"
+  }
+]
