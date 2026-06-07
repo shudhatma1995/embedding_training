@@ -145,21 +145,6 @@ def build(split, cap_per_intent, none_cap, seed):
     return rows, meta
 
 
-def load_massive_eval(real_intents, path=None):
-    """The eval trio for the MASSIVE set, mirroring data.load_eval_data:
-        (train_groups from train.json, massive_groups, massive_none)
-    Prototypes are built from OUR train data; queries come from MASSIVE."""
-    path = path or os.path.join(DATA_DIR, "test_massive.json")
-    if not os.path.exists(path):
-        raise FileNotFoundError(
-            f"{path} not found — run `python build_massive.py` first (needs network)."
-        )
-    train_groups = load_by_intent(os.path.join(DATA_DIR, "train.json"), real_intents)
-    massive_groups = load_by_intent(path, real_intents)
-    massive_none = load_by_intent(path, [NONE_ID])[NONE_ID]
-    return train_groups, massive_groups, massive_none
-
-
 def main():
     ap = argparse.ArgumentParser(description="Build the MASSIVE external test set")
     ap.add_argument("--split", default="test", choices=["train", "validation", "test"])

@@ -93,3 +93,56 @@ def test_iter_batches_drops_incomplete_trailing_batch():
     p = ["x"] * 5
     i = ["a", "a", "b", "b", "c"]
     assert len(list(data.iter_batches(a, p, i, random.Random(0)))) == 1
+
+
+# ── eval-set registry ─────────────────────────────────────────────────────────
+def _fake_data_dir(tmp_path):
+    """A self-contained data dir: train.json + a 'template' test.json (test.json is
+    the EVAL_SETS filename for 'template'), so load_eval_set runs fully offline."""
+    (tmp_path / "train.json").write_text(
+        json.dumps(
+            [{"text": "play jazz", "intent": "media"}, {"text": "nonsense", "intent": "none"}]
+        )
+    )
+    (tmp_path / "test.json").write_text(
+        json.dumps(
+            [{"text": "put on music", "intent": "media"}, {"text": "blah", "intent": "none"}]
+        )
+    )
+    return str(tmp_path)
+
+
+def test_eval_sets_registry_has_the_known_sets():
+    assert {"template", "wild", "massive"} <= set(data.EVAL_SETS)
+
+
+def test_load_eval_set_returns_train_test_none_trio(tmp_path):
+    d = _fake_data_dir(tmp_path)
+    train, test, none = data.load_eval_set("template", ["media"], data_dir=d)
+    assert train["media"] == ["play jazz"]
+    assert test["media"] == ["put on music"]
+    assert none == ["blah"]  # none pulled from the SAME test file
+
+
+def test_load_eval_data_is_the_template_set(tmp_path):
+    # the convenience wrapper must be byte-identical to the registry call it delegates to
+    d = _fake_data_dir(tmp_path)
+    assert data.load_eval_data(["media"], data_dir=d) == data.load_eval_set(
+        "template", ["media"], data_dir=d
+    )
+
+
+def test_load_eval_set_rejects_unknown_name(tmp_path):
+    import pytest
+
+    with pytest.raises(ValueError, match="unknown eval set"):
+        data.load_eval_set("nope", ["media"], data_dir=str(tmp_path))
+
+
+def test_load_eval_set_missing_file_raises_with_hint(tmp_path):
+    import pytest
+
+    (tmp_path / "train.json").write_text(json.dumps([{"text": "x", "intent": "media"}]))
+    # 'massive' file is absent → FileNotFoundError carrying the build hint
+    with pytest.raises(FileNotFoundError, match="build_massive"):
+        data.load_eval_set("massive", ["media"], data_dir=str(tmp_path))
