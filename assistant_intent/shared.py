@@ -11,9 +11,11 @@ model (e.g. sentence-transformers MiniLM) supplies its own one-line adapter. So 
 exact same prototype + threshold evaluation runs against ANY encoder — which is what
 makes an apples-to-apples baseline possible.
 
-  make_encoder    - wrap our (model, tok, device) as an Encoder callable.
-  build_prototypes- encode → mean → L2-normalize, one centroid per intent.
-  proto_recall1   - in-training quality signal: nearest-prototype Recall@1 on test.
+  make_encoder       - wrap our (model, tok, device) as an Encoder callable.
+  mine_hard_negatives- encode all train queries → per-query top-k confusable
+                       different-intent neighbours (the hard-negative pool).
+  build_prototypes   - encode → mean → L2-normalize, one centroid per intent.
+  proto_recall1      - in-training quality signal: nearest-prototype Recall@1 on test.
 
 Deliberately dependency-light (numpy only) and NOT named `evaluate`, so nothing on
 sys.path can shadow it (train.py puts customer_intent_search/ — which has its own
@@ -42,6 +44,45 @@ def safe_matmul(a, b):
     """
     with np.errstate(divide="ignore", over="ignore", invalid="ignore"):
         return a @ b
+
+
+def mine_hard_negatives(encode, train_groups, top_k=1):
+    """Offline hard-negative mining, driven by the Encoder callable.
+
+    Embed every training query with the CURRENT encoder, and for each query find
+    its top_k most-similar DIFFERENT-intent queries. Those confusable cross-intent
+    neighbours are the "hard" negatives. Returns {intent: [hard_neg_text, ...]} —
+    the pool run_epoch samples from, one (or k) per anchor each batch.
+
+    Why this helps (beyond the in-batch negatives we already have):
+        In one-pair-per-intent batches, each anchor's negative for intent X is just
+        whatever ONE X-query happened to be sampled — a RANDOM representative. After
+        a few epochs the easy ones give ~0 gradient and quality plateaus. Mining
+        instead injects the WORST-CASE confuser (the single most X-looking query for
+        this anchor), so the loss keeps sharpening exactly the boundaries still
+        broken — e.g. media vs smart_home. Well-separated intents surface only ~0-sim
+        negatives, so the signal is spent where it's actually needed.
+
+    Offline = computed from a weight SNAPSHOT; re-mine periodically as the model
+    improves and yesterday's hard negs become easy. Same idea as
+    customer_intent_search, but here it depends only on `encode` (no model/tok).
+    """
+    texts, labels = [], []
+    for intent, qs in train_groups.items():
+        texts.extend(qs)
+        labels.extend([intent] * len(qs))
+    pool = {it: [] for it in train_groups}
+    if not texts:
+        return pool
+    emb = encode(texts)  # [N, D], L2-normalized
+    sim = safe_matmul(emb, emb.T)  # [N, N] cosine
+    labels_arr = np.array(labels)
+    for i in range(len(texts)):
+        scores = sim[i].copy()
+        scores[labels_arr == labels[i]] = -2.0  # mask same-intent (incl. self)
+        for j in np.argsort(-scores)[:top_k]:
+            pool[labels[i]].append(texts[j])
+    return pool
 
 
 def build_prototypes(encode, train_groups):

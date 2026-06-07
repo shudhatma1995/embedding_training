@@ -50,7 +50,7 @@ from data import DATA_DIR, intents_in_file, iter_batches, load_by_intent, make_p
 # Intent taxonomy is owned by intents.py (single source of truth); `none` is excluded
 # from the trainable set by construction.
 from intents import NONE_ID, REAL_INTENTS
-from shared import make_encoder, proto_recall1
+from shared import make_encoder, mine_hard_negatives, proto_recall1
 
 HERE = os.path.dirname(__file__)
 
@@ -91,6 +91,7 @@ def mnr_loss(
     pos_emb: torch.Tensor,
     temperature: float,
     neg_emb: torch.Tensor = None,
+    hard_neg_emb: torch.Tensor = None,
 ):
     """
     Multiple-Negatives-Ranking / InfoNCE.
@@ -99,14 +100,31 @@ def mnr_loss(
         loss = cross_entropy(S, targets)
     Low τ sharpens the distribution (harder signal); high τ softens it.
 
-    none-as-negatives (neg_emb [k,D]): append k SHARED junk negatives as extra
-    columns → S grows [B,B] → [B,B+k]. Targets are unchanged (still the diagonal),
-    so every real anchor must rank its positive above all other intents AND above
-    every `none` example. This pushes junk AWAY from all prototypes.
+    Two kinds of extra negative columns can be appended; targets stay the diagonal,
+    so the final matrix is [B, B + k_none + k_hn] and every anchor must rank its own
+    positive above ALL of them:
+
+    none-as-negatives (neg_emb [k,D]): k SHARED junk vectors — the SAME columns for
+    every row, so a plain matmul `A @ neg_embᵀ → [B,k]` suffices. Pushes junk away
+    from all prototypes.
+
+    hard negatives (hard_neg_emb [B*k, D]): PER-ANCHOR — row i gets its OWN k mined
+    confusers (the most-similar different-intent queries, from mine_hard_negatives).
+    Because each row's columns differ we can't share a matmul; reshape to [B,k,D] and
+    use a batched matmul so anchor i is dotted only with ITS OWN k negatives:
+        [B,1,D] @ [B,D,k] → [B,1,k] → [B,k]
+    This sharpens exactly the confusable boundaries (e.g. media vs smart_home) that
+    in-batch negatives leave alone.
     """
     sim = (anchor_emb @ pos_emb.T) / temperature  # [B,B]
     if neg_emb is not None and len(neg_emb):
-        sim = torch.cat([sim, (anchor_emb @ neg_emb.T) / temperature], dim=1)  # [B,B+k]
+        sim = torch.cat([sim, (anchor_emb @ neg_emb.T) / temperature], dim=1)  # [B,B+k_none]
+    if hard_neg_emb is not None and len(hard_neg_emb):
+        B, D = anchor_emb.shape
+        k = hard_neg_emb.shape[0] // B  # k per anchor, inferred from [B*k, D]
+        hn = hard_neg_emb.view(B, k, D)  # [B,k,D]: each anchor's own k negatives
+        hard_sim = torch.bmm(anchor_emb.unsqueeze(1), hn.transpose(1, 2)).squeeze(1)  # [B,k]
+        sim = torch.cat([sim, hard_sim / temperature], dim=1)  # [B, B+k_none+k_hn]
     labels = torch.arange(anchor_emb.shape[0], device=sim.device)
     return F.cross_entropy(sim, labels)
 
@@ -145,13 +163,19 @@ def run_epoch(
     none_neg_k,
     rng,
     device,
+    hard_neg_map=None,
+    hn_top_k=0,
 ):
     """One training epoch: fresh pairs → one-pair-per-intent batches → step.
-    Returns (mean_loss, train_acc) for the epoch log."""
+    Returns (mean_loss, train_acc) for the epoch log.
+
+    hard_neg_map ({intent: [texts]} from mine_hard_negatives) + hn_top_k>0 enable
+    per-anchor hard negatives: for each batch we sample k confusers from each
+    anchor's pool (in row order) and hand them to mnr_loss as extra columns."""
     A, P, I = make_pairs(train_groups, pairs_per_intent, rng)  # dynamic each epoch
     model.train()
     tot_loss = correct = npairs = nbatch = 0
-    for anchors, positives in iter_batches(A, P, I, rng):
+    for anchors, positives, intents in iter_batches(A, P, I, rng):
         ae = embed(model, tok, anchors, device)
         pe = embed(model, tok, positives, device)
 
@@ -161,7 +185,13 @@ def run_epoch(
             neg_texts = [rng.choice(none_pool) for _ in range(none_neg_k)]
             neg_emb = embed(model, tok, neg_texts, device)
 
-        loss = mnr_loss(ae, pe, temperature, neg_emb)
+        # sample each anchor's OWN k hard negatives (row order matches `intents`)
+        hard_emb = None
+        if hard_neg_map is not None and hn_top_k > 0:
+            hard_texts = [rng.choice(hard_neg_map[it]) for it in intents for _ in range(hn_top_k)]
+            hard_emb = embed(model, tok, hard_texts, device)
+
+        loss = mnr_loss(ae, pe, temperature, neg_emb, hard_emb)
 
         optimizer.zero_grad()
         loss.backward()
@@ -232,12 +262,27 @@ def train(args):
         f"\n  Training for {args.epochs} epochs "
         f"(batch={n_intents}, τ={args.temperature}, lr={args.lr})..."
     )
+    # Hard-negative knobs are optional (default off) so a hand-built args Namespace
+    # — e.g. the smoke test — works without them; build_parser supplies the defaults.
+    hn_top_k = getattr(args, "hn_top_k", 0)
+    hn_start = getattr(args, "hn_start_epoch", 3)
+    hn_refresh = getattr(args, "hn_refresh_every", 3)
+    if hn_top_k > 0:
+        print(
+            f"  Hard negatives: top_k={hn_top_k}, start_epoch={hn_start}, "
+            f"refresh_every={hn_refresh} (warmup uses in-batch negs only)"
+        )
     print(f"  {'epoch':>5} | {'loss':>7} | {'train_acc':>9} | {'test_R@1':>8} | {'time':>5}")
     print("  " + "─" * 50)
 
     history = []
+    hard_neg_map = None  # None until mining kicks in (after warmup)
     for epoch in range(1, args.epochs + 1):
         t0 = time.time()
+        # (Re-)mine hard negatives with CURRENT weights at the start of the warmup
+        # epoch and every refresh interval after. `encode` reads live model weights.
+        if hn_top_k > 0 and epoch >= hn_start and (epoch - hn_start) % hn_refresh == 0:
+            hard_neg_map = mine_hard_negatives(encode, train_groups, top_k=hn_top_k)
         train_loss, train_acc = run_epoch(
             model,
             tok,
@@ -250,6 +295,8 @@ def train(args):
             args.none_neg_k,
             rng,
             device,
+            hard_neg_map,
+            hn_top_k,
         )
         test_r1 = proto_recall1(encode, train_groups, test_groups)
         history.append({"loss": train_loss, "train_acc": train_acc, "test_r1": test_r1})
@@ -279,6 +326,9 @@ def train(args):
             "temperature": args.temperature,
             "none_neg_k": args.none_neg_k,
             "none_in_vocab": none_in_vocab,
+            "hn_top_k": hn_top_k,
+            "hn_start_epoch": hn_start if hn_top_k > 0 else None,
+            "hn_refresh_every": hn_refresh if hn_top_k > 0 else None,
             "vocab_size": tok.vocab_size,
             "r1_random_init": r1_before,
             "history": history,
@@ -322,6 +372,27 @@ def build_parser():
         "--none-in-vocab",
         action="store_true",
         help="fit tokenizer on the none pool too (junk words in-vocab vs [UNK])",
+    )
+    ap.add_argument(
+        "--hn-top-k",
+        type=int,
+        default=0,
+        help="per-anchor hard negatives mined per batch (0 = off). Each anchor gets "
+        "its own k most-confusable different-intent queries as extra loss columns.",
+    )
+    ap.add_argument(
+        "--hn-start-epoch",
+        type=int,
+        default=3,
+        help="epoch to begin mining (earlier epochs warm up on in-batch negatives only, "
+        "so the first mining runs on a non-random model).",
+    )
+    ap.add_argument(
+        "--hn-refresh-every",
+        type=int,
+        default=3,
+        help="re-mine hard negatives every N epochs with current weights "
+        "(yesterday's hard negs become easy as the model sharpens).",
     )
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--output-dir", type=str, default=os.path.join(HERE, "models", "finetuned"))
