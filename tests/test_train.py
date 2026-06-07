@@ -68,6 +68,23 @@ def test_mnr_loss_accepts_extra_none_negatives():
     assert torch.isfinite(loss)
 
 
+def test_mnr_loss_accepts_per_anchor_hard_negatives():
+    a = torch.eye(3)
+    # hard_neg_emb is [B*k, D]; k is inferred as 2 here (6 rows / 3 anchors)
+    hard = torch.eye(3).repeat(2, 1)
+    loss = train.mnr_loss(a, a.clone(), temperature=0.05, hard_neg_emb=hard)
+    assert loss.ndim == 0 and torch.isfinite(loss)
+
+
+def test_mnr_loss_hard_negative_raises_loss():
+    # each anchor's hard negative is itself → a maximally-confusing extra column,
+    # so the loss must be strictly higher than without it.
+    a = torch.eye(4)
+    plain = train.mnr_loss(a, a.clone(), temperature=0.05)
+    with_hn = train.mnr_loss(a, a.clone(), temperature=0.05, hard_neg_emb=a.clone())
+    assert with_hn > plain
+
+
 # ── scheduler ─────────────────────────────────────────────────────────────────
 def test_scheduler_warms_up_then_decays_to_floor():
     param = torch.nn.Parameter(torch.zeros(1))

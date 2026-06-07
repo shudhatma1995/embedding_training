@@ -78,7 +78,9 @@ def make_pairs(groups: dict, pairs_per_intent: int, rng: random.Random):
 def iter_batches(A, P, I, rng: random.Random):
     """
     Yield batches with EXACTLY ONE pair per intent (no false negatives).
-    Each yield: (anchor_texts, positive_texts) of length == n_intents.
+    Each yield: (anchor_texts, positive_texts, intents) of length == n_intents.
+    `intents` is the per-row intent label, so the caller can look up each anchor's
+    hard-negative pool (hard-neg mining); plain MNR can just ignore it.
     Incomplete trailing batches are dropped to keep the loss matrix square.
     """
     by = defaultdict(list)
@@ -91,7 +93,7 @@ def iter_batches(A, P, I, rng: random.Random):
     for r in range(rounds):
         batch = [v[r] for v in by.values() if r < len(v)]
         if len(batch) == n_intents:  # full batch only
-            yield [A[i] for i in batch], [P[i] for i in batch]
+            yield [A[i] for i in batch], [P[i] for i in batch], [I[i] for i in batch]
 
 
 # ── writing ──────────────────────────────────────────────────────────────────

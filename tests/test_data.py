@@ -76,12 +76,15 @@ def test_iter_batches_has_exactly_one_pair_per_intent():
 
     batches = list(data.iter_batches(a, p, i, rng=random.Random(0)))
     assert batches, "expected at least one full batch"
-    for anchors, _positives in batches:
+    for anchors, _positives, intents in batches:
         assert len(anchors) == n_intents
         # every batch covers each intent exactly once → no false negatives
         intents_in_batch = [t[0] for t in anchors]
         assert sorted(intents_in_batch) == sorted(set(i))
         assert len(set(intents_in_batch)) == len(intents_in_batch)
+        # the yielded per-row intents must match each anchor's own intent (run_epoch
+        # uses them to look up the right hard-negative pool)
+        assert intents == intents_in_batch
 
 
 def test_iter_batches_drops_incomplete_trailing_batch():

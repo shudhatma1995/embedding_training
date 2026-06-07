@@ -79,3 +79,41 @@ def test_proto_recall1_skips_intents_with_no_test_queries():
     train = {"media": ["m_train"], "weather": ["w_train"]}
     test = {"media": ["m_test"], "weather": []}  # weather has no test rows
     assert shared.proto_recall1(enc, train, test) == 1.0
+
+
+# ── mine_hard_negatives ───────────────────────────────────────────────────────
+# Toy geometry from the teaching demo: one media query leans toward smart and one
+# smart query leans toward media, so the two are each other's hardest confuser.
+_HN_TABLE = {
+    "m_pure": [1.0, 0.0, 0.0],
+    "m_lean": [0.8, 0.6, 0.0],  # media query that leans onto smart's axis
+    "s_pure": [0.0, 1.0, 0.0],
+    "s_lean": [0.6, 0.8, 0.0],  # the confuser (cos with m_lean = 0.96)
+    "w1": [0.0, 0.0, 1.0],
+    "w2": [0.0, 0.1, 1.0],  # weather: well separated from both
+}
+_HN_GROUPS = {"media": ["m_pure", "m_lean"], "smart": ["s_pure", "s_lean"], "weather": ["w1", "w2"]}
+
+
+def test_mine_hard_negatives_only_returns_different_intent_texts():
+    pool = shared.mine_hard_negatives(make_fake_encoder(_HN_TABLE), _HN_GROUPS, top_k=1)
+    for intent, negs in pool.items():
+        own = set(_HN_GROUPS[intent])
+        assert negs, f"{intent} got no hard negatives"
+        assert all(t not in own for t in negs)  # same-intent is masked out
+
+
+def test_mine_hard_negatives_picks_the_most_confusable_neighbour():
+    pool = shared.mine_hard_negatives(make_fake_encoder(_HN_TABLE), _HN_GROUPS, top_k=1)
+    # the media↔smart pair are each other's hardest cross-intent neighbour
+    assert "s_lean" in pool["media"]
+    assert "m_lean" in pool["smart"]
+
+
+def test_mine_hard_negatives_pool_size_scales_with_top_k():
+    table = {"a1": [1.0, 0.0], "a2": [0.9, 0.1], "b1": [0.0, 1.0], "b2": [0.1, 0.9]}
+    groups = {"a": ["a1", "a2"], "b": ["b1", "b2"]}
+    pool = shared.mine_hard_negatives(make_fake_encoder(table), groups, top_k=2)
+    # top_k negatives per query × queries per intent
+    assert len(pool["a"]) == 2 * 2
+    assert len(pool["b"]) == 2 * 2
