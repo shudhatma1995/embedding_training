@@ -33,8 +33,8 @@ import shutil
 
 import numpy as np
 import torch
-from data import DATA_DIR, load_by_intent, load_eval_data
-from intents import NONE_ID, REAL_INTENTS
+from data import load_eval_set
+from intents import REAL_INTENTS
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -58,15 +58,6 @@ METRIC_COLS = [
     ("wild_r1", "wild R@1", True),
     ("wild_overall", "wild overall", True),
 ]
-
-
-def load_wild_eval():
-    """The wild OOD eval trio (train prototypes from train.json, queries from
-    test_wild.json) — same shape as data.load_eval_data but for the wild set."""
-    train_groups = load_by_intent(os.path.join(DATA_DIR, "train.json"), REAL_INTENTS)
-    wild_groups = load_by_intent(os.path.join(DATA_DIR, "test_wild.json"), REAL_INTENTS)
-    wild_none = load_by_intent(os.path.join(DATA_DIR, "test_wild.json"), [NONE_ID])[NONE_ID]
-    return train_groups, wild_groups, wild_none
 
 
 def run_one(top_k, seed, device, tmpl, wild, scratch):
@@ -105,8 +96,8 @@ def main():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     scratch = os.path.join(HERE, "models", "_hn_ablation_tmp")
 
-    tmpl = load_eval_data(REAL_INTENTS)  # (train, template-test, template-none)
-    wild = load_wild_eval()  # (train, wild-test, wild-none)
+    tmpl = load_eval_set("template", REAL_INTENTS)  # (train, template-test, template-none)
+    wild = load_eval_set("wild", REAL_INTENTS)  # (train, wild-test, wild-none)
 
     print("=" * 78)
     print(f"HARD-NEGATIVE ABLATION  (config B; k in {args.top_ks}; seeds={args.seeds})")

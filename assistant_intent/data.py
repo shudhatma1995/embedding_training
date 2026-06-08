@@ -44,16 +44,46 @@ def intents_in_file(path: str) -> list:
     return sorted({r["intent"] for r in rows})
 
 
-def load_eval_data(real_intents, data_dir=DATA_DIR):
-    """The standard evaluation trio for a set of real intents:
+# ── eval-set registry ─────────────────────────────────────────────────────────
+# The catalog of evaluation sets. Every one is the SAME {text,intent} schema in a
+# file under data/, so a single loader serves them all — adding a new external set
+# (e.g. SLURP) is a one-line entry here, not a new bespoke loader. `_BUILD_HINT`
+# carries the "how to produce this file" message for sets that aren't committed.
+EVAL_SETS = {
+    "template": "test.json",  # in-distribution, from data_gen/ (committed)
+    "wild": "test_wild.json",  # hand-written OOD, from eval_wild.py (committed)
+    "massive": "test_massive.json",  # external real data, from build_massive.py (gitignored)
+}
+_BUILD_HINT = {
+    "massive": "run `python build_massive.py` first (needs network)",
+    "wild": "run `python eval_wild.py` first",
+}
+
+
+def load_eval_set(name, real_intents, data_dir=DATA_DIR, train_file="train.json"):
+    """The evaluation trio for a NAMED eval set (see EVAL_SETS):
         (train_groups, test_groups, none_texts)
-    train/test groups are {intent: [texts]}; none_texts is a flat list from test.json.
-    One call so evaluate.py, experiments.py, and the pretrained-baseline script all
-    load identically (no repeated `[NONE_ID][NONE_ID]` boilerplate)."""
-    train_groups = load_by_intent(os.path.join(data_dir, "train.json"), real_intents)
-    test_groups = load_by_intent(os.path.join(data_dir, "test.json"), real_intents)
-    none_texts = load_by_intent(os.path.join(data_dir, "test.json"), [NONE_ID])[NONE_ID]
+    Prototypes are always built from `train_file`; the queries come from the named
+    set's file. train/test groups are {intent: [texts]}; none_texts is a flat list.
+    One loader for template / wild / massive (and any future set) — no per-set
+    duplication, no repeated `[NONE_ID][NONE_ID]` boilerplate."""
+    if name not in EVAL_SETS:
+        raise ValueError(f"unknown eval set {name!r}; available: {sorted(EVAL_SETS)}")
+    test_path = os.path.join(data_dir, EVAL_SETS[name])
+    if not os.path.exists(test_path):
+        hint = _BUILD_HINT.get(name, "")
+        raise FileNotFoundError(f"{test_path} not found" + (f" — {hint}" if hint else ""))
+    train_groups = load_by_intent(os.path.join(data_dir, train_file), real_intents)
+    test_groups = load_by_intent(test_path, real_intents)
+    none_texts = load_by_intent(test_path, [NONE_ID])[NONE_ID]
     return train_groups, test_groups, none_texts
+
+
+def load_eval_data(real_intents, data_dir=DATA_DIR):
+    """Convenience for the common case: the in-distribution `template` eval trio.
+    Thin wrapper over load_eval_set so existing callers (evaluate.py, experiments.py,
+    the baselines) keep their terse `load_eval_data(REAL_INTENTS)` call."""
+    return load_eval_set("template", real_intents, data_dir=data_dir)
 
 
 # ── pairing ──────────────────────────────────────────────────────────────────

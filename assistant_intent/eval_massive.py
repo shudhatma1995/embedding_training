@@ -18,7 +18,7 @@ import os
 
 import torch
 from baseline_minilm import make_minilm_encoder
-from build_massive import load_massive_eval
+from data import load_eval_set
 from evaluate import evaluate_model, load_model
 from intents import REAL_INTENTS
 from shared import make_encoder
@@ -41,7 +41,7 @@ def main():
     # our model dictates the intent set (match what it was trained on)
     ours_model, ours_tok, config = load_model(os.path.join(HERE, "models", "finetuned"), device)
     real_intents = config.get("train_intents") or REAL_INTENTS
-    train_groups, massive_groups, massive_none = load_massive_eval(real_intents)
+    train_groups, massive_groups, massive_none = load_eval_set("massive", real_intents)
 
     n_real = sum(len(v) for v in massive_groups.values())
     print(f"  Intents ({len(real_intents)}): {', '.join(real_intents)}")
