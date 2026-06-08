@@ -20,3 +20,6 @@ assistant_intent/data/test_massive.meta.json
 # trained model checkpoints + derived embedding caches — regenerate, don't commit.
 # (fastText vector cache: `python build_fasttext.py`)
 assistant_intent/models/
+
+# experiment run artifacts (JSON results + HTML reports) — regenerate with bench.py
+results/
