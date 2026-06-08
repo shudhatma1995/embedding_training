@@ -255,11 +255,35 @@ def write_report(results, previous, root=RESULTS_DIR):
     return path
 
 
+def serve_report(results, port, root=RESULTS_DIR):  # pragma: no cover - interactive server
+    """Serve results/ over localhost and open this run's report, then block until
+    Ctrl-C. Localhost sidesteps the file:// / default-app quirks that show a blank page."""
+    import webbrowser
+    from functools import partial
+    from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+
+    url = f"http://localhost:{port}/{results['name']}/{_stamp(results['timestamp'])}.html"
+    httpd = ThreadingHTTPServer(("", port), partial(SimpleHTTPRequestHandler, directory=root))
+    print(f"\n  serving {root} at http://localhost:{port}/  (Ctrl-C to stop)")
+    print(f"  → {url}")
+    webbrowser.open(url)
+    try:
+        httpd.serve_forever()
+    except KeyboardInterrupt:
+        print("\n  server stopped")
+    finally:
+        httpd.server_close()
+
+
 def main():
     ap = argparse.ArgumentParser(description="Run a multi-seed encoder experiment + HTML report")
     ap.add_argument("--name", default="encoder-arms")
     ap.add_argument("--arms", nargs="+", default=["word", "random", "fasttext"], choices=list(ARMS))
     ap.add_argument("--seeds", type=int, nargs="+", default=[0, 1, 2, 3, 4])
+    ap.add_argument(
+        "--serve", action="store_true", help="serve + open the report over localhost when done"
+    )
+    ap.add_argument("--port", type=int, default=8765, help="port for --serve")
     args = ap.parse_args()
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -275,6 +299,9 @@ def main():
         print(f"  vs previous ({previous['timestamp']}): {len(regs)} regression(s)")
     else:
         print("  (first run — baseline; future runs will diff against it)")
+
+    if args.serve:
+        serve_report(results, args.port)
 
 
 if __name__ == "__main__":
