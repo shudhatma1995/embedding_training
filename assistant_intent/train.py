@@ -51,6 +51,7 @@ from data import DATA_DIR, intents_in_file, iter_batches, load_by_intent, make_p
 # from the trainable set by construction.
 from intents import NONE_ID, REAL_INTENTS
 from shared import make_encoder, mine_hard_negatives, proto_recall1
+from subword import SubwordTokenizer  # from-scratch BPE tokenizer (lever B: kills [UNK])
 
 HERE = os.path.dirname(__file__)
 
@@ -83,6 +84,26 @@ def resolve_train_intents(requested, data_path):
             f"the similarity matrix is 1×1 and the loss has no in-batch negatives."
         )
     return chosen
+
+
+def build_tokenizer(args, fit_texts):
+    """Construct + fit the tokenizer named by --tokenizer (getattr-guarded so a
+    hand-built args Namespace still works, like the hard-negative knobs).
+
+      'word' — the frozen word-level SimpleTokenizer; any word unseen in training
+               becomes [UNK] (information destroyed). Canonical default.
+      'bpe'  — the from-scratch SubwordTokenizer; words split into subword pieces
+               with a single-character fallback, so there is no [UNK].
+
+    The model is tokenizer-agnostic: build_model(tok) only reads tok.vocab_size and
+    tok.max_seq_len, so swapping the tokenizer needs no change to the encoder.
+    """
+    kind = getattr(args, "tokenizer", "word")
+    max_seq_len = getattr(args, "max_seq_len", 32)
+    if kind == "bpe":
+        bpe_vocab = getattr(args, "bpe_vocab", 2000)
+        return SubwordTokenizer(max_vocab_size=bpe_vocab, max_seq_len=max_seq_len).fit(fit_texts)
+    return SimpleTokenizer(max_vocab_size=8000, max_seq_len=max_seq_len).fit(fit_texts)
 
 
 # ── loss ─────────────────────────────────────────────────────────────────────
@@ -239,8 +260,9 @@ def train(args):
     fit_texts = [t for qs in train_groups.values() for t in qs]
     if none_in_vocab:
         fit_texts = fit_texts + none_pool
-    tok = SimpleTokenizer(max_vocab_size=8000, max_seq_len=32).fit(fit_texts)
-    print(f"\n  none in vocab : {none_in_vocab}  ({len(none_pool)} junk examples in fit)")
+    tok = build_tokenizer(args, fit_texts)
+    print(f"\n  tokenizer     : {getattr(args, 'tokenizer', 'word')}")
+    print(f"  none in vocab : {none_in_vocab}  ({len(none_pool)} junk examples in fit)")
     if args.none_neg_k > 0:
         print(f"  none negatives: k={args.none_neg_k} per batch")
     print(f"  Vocab size    : {tok.vocab_size}")
@@ -351,6 +373,27 @@ def build_parser():
         default=None,
         help="subset of real intents to train (default: all of REAL_INTENTS). "
         "`none` is not allowed; needs ≥2 intents.",
+    )
+    ap.add_argument(
+        "--tokenizer",
+        choices=["word", "bpe"],
+        default="word",
+        help="word = SimpleTokenizer (unseen word -> [UNK]); bpe = from-scratch "
+        "SubwordTokenizer (subword pieces, no [UNK]). Model is unchanged either way.",
+    )
+    ap.add_argument(
+        "--max-seq-len",
+        type=int,
+        default=32,
+        help="token positions (model pos_emb size). bpe needs more (subwords are "
+        "shorter units): 64 covers the MASSIVE real-utterance set with no truncation.",
+    )
+    ap.add_argument(
+        "--bpe-vocab",
+        type=int,
+        default=2000,
+        help="BPE vocab budget (only used with --tokenizer bpe). Our small corpus "
+        "saturates ~878 merges, so anything ≥ ~900 is equivalent.",
     )
     ap.add_argument("--epochs", type=int, default=25)
     ap.add_argument(
