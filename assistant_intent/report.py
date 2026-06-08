@@ -22,10 +22,15 @@ Run dict schema (produced by bench.py; numbers are fractions in [0,1]):
       }}}}
   }
 
-Kept pure (no file IO, no training) so it is unit-tested; bench.py owns load/save.
+The render functions are pure (no file IO, no training) so they are unit-tested; the
+CLI at the bottom re-renders any saved run JSON to HTML (handy after tweaking styling,
+with no re-training). bench.py also calls render_html directly at run time.
 """
 
+import argparse
 import html
+import json
+import os
 
 REGRESSION_THR = 0.02  # a drop of ≥2 pp vs the previous run is flagged as a regression
 WEAK_INTENT_THR = 0.70  # per-intent R@1 below this is flagged as a weak spot
@@ -234,3 +239,45 @@ def render_html(current, previous=None):
 <h2>Misclassified examples</h2>
 {_failures(current)}
 </body></html>"""
+
+
+def _previous_sibling(json_path):
+    """The run JSON immediately before `json_path` in its folder (chronological =
+    lexicographic on the timestamp filenames), or None — for the CLI's auto-diff."""
+    d = os.path.dirname(os.path.abspath(json_path))
+    base = os.path.basename(json_path)
+    files = sorted(f for f in os.listdir(d) if f.endswith(".json"))
+    if base not in files:
+        return None
+    i = files.index(base)
+    return os.path.join(d, files[i - 1]) if i > 0 else None
+
+
+def main():  # pragma: no cover - CLI re-render of a saved run
+    ap = argparse.ArgumentParser(
+        description="Re-render a saved bench run JSON to HTML (no re-training)"
+    )
+    ap.add_argument("run", help="path to results/<name>/<ts>.json")
+    ap.add_argument(
+        "--previous", help="explicit previous-run JSON (default: the run just before it)"
+    )
+    ap.add_argument("--out", help="output HTML path (default: alongside the JSON)")
+    args = ap.parse_args()
+
+    with open(args.run) as f:
+        current = json.load(f)
+    prev_path = args.previous or _previous_sibling(args.run)
+    previous = None
+    if prev_path and os.path.exists(prev_path):
+        with open(prev_path) as f:
+            previous = json.load(f)
+
+    out = args.out or os.path.splitext(args.run)[0] + ".html"
+    with open(out, "w") as f:
+        f.write(render_html(current, previous))
+    note = f"vs {os.path.basename(prev_path)}" if previous else "no previous"
+    print(f"rendered → {out}  ({note})")
+
+
+if __name__ == "__main__":
+    main()

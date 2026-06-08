@@ -1,7 +1,7 @@
 """report.py pure logic: regression + weak-intent detection and HTML rendering.
 No training/IO — fed hand-built run dicts matching bench.py's schema."""
 
-from report import regressions, render_html, weak_intents
+from report import _previous_sibling, regressions, render_html, weak_intents
 
 
 def _run(ts, massive_r1=0.85, weather_r1=0.60):
@@ -79,3 +79,12 @@ def test_render_html_escapes_and_includes_sections():
 
 def test_render_html_first_run_has_baseline_note():
     assert "First run" in render_html(_run("t1"), None)
+
+
+def test_previous_sibling_picks_the_run_before(tmp_path):
+    for ts in ["20260101T000000_0000", "20260102T000000_0000", "20260103T000000_0000"]:
+        (tmp_path / f"{ts}.json").write_text("{}")
+    mid = str(tmp_path / "20260102T000000_0000.json")
+    assert _previous_sibling(mid).endswith("20260101T000000_0000.json")  # the one before
+    first = str(tmp_path / "20260101T000000_0000.json")
+    assert _previous_sibling(first) is None  # nothing before the earliest
