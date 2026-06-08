@@ -16,3 +16,7 @@ htmlcov/
 # `python build_massive.py`. The mapping/builder/eval are committed, the corpus is not.
 assistant_intent/data/test_massive.json
 assistant_intent/data/test_massive.meta.json
+
+# trained model checkpoints + derived embedding caches — regenerate, don't commit.
+# (fastText vector cache: `python build_fasttext.py`)
+assistant_intent/models/
