@@ -11,3 +11,8 @@ __pycache__/
 .coverage.*
 coverage.xml
 htmlcov/
+
+# third-party external eval data (CC-BY-4.0 MASSIVE) — not vendored; rebuild with
+# `python build_massive.py`. The mapping/builder/eval are committed, the corpus is not.
+assistant_intent/data/test_massive.json
+assistant_intent/data/test_massive.meta.json
